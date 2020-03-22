@@ -31,8 +31,6 @@ func (r *redisResourceRepository) Add(setKey string, resource string) (int, erro
 }
 
 func (r *redisResourceRepository) BulkInsert(setKey string) (BulkResourceInserter, error) {
-	// uri := "redis://" + r.client.Options().Addr
-	// cmd := exec.Command("redis-cli", "-u", uri, "--pipe")
 	cmd := exec.Command("redis-cli", "--pipe")
 
 	stdIn, err := cmd.StdinPipe()

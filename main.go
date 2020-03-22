@@ -23,7 +23,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/service/s3"
-	// "github.com/aws/aws-sdk-go/service/s3/s3manager"
 
 	"github.com/go-redis/redis"
 
@@ -82,46 +81,29 @@ func (i *ingestService) Ingest(bucketUrl *url.URL, filterString string, recursio
 
 func (i *ingestService) ingestBucket(bucketUrl *url.URL, filter FilterFunc, depth int) (int, error) {
 	bi, err := i.resourceRepository.BulkInsert(i.resourceSetKey) 
+
+	bucket := NewS3Bucket(i.S3, bucketUrl.Host)
 	
-	/* TODO: &aws.ListObjectsOptions ?
-		need to specify the path of the bucket (as in ingest ingestPrefix)
-	 */
-	input := &s3.ListObjectsV2Input{
-		Bucket: aws.String(bucketUrl.Host), //"aws-golang-vault"
-		Prefix: aws.String(bucketUrl.Path),
-	}
-
-	result, err := i.S3.ListObjectsV2(input)
-
-	// fmt.Println(result.String())
-
-	if err != nil {
-		fmt.Println(err)
-		return 0, err
-	}
-
-	for _, obj := range result.Contents {
+	err = bucket.ListObjects(&ListObjectsOptions{
+		Path: bucketUrl.Path,
+		Depth: depth,
+	}, func(obj *s3.Object) error {
 		newResource, err := filter(&url.URL{
 			Scheme: bucketUrl.Scheme, 
 			Host: bucketUrl.Host,
 			Path: *obj.Key,
 		})
-
+		if newResource == "" {
+			return nil
+		}
 		if err != nil {
-			return 0, err
+			return err
 		}
+		return bi.Insert(newResource)
+	})
 
-		ins_err := bi.Insert(newResource)
-
-		if ins_err != nil {
-			return 0, ins_err
-		}
-		// if err == nil {
-		// 	err := bi.Insert(newResource)
-		// 	if err != nil {
-		// 		return 05, err
-		// 	}
-		// }
+	if err != nil {
+		return 05, err
 	}
 
 	bi.Close()
