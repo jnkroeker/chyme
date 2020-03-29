@@ -15,3 +15,13 @@ Set up a vault development server:
 Set up a redis development server:
 
     `./redis-server`
+
+Run the CLI:
+
+    `go install vault_aws`
+
+Currently supported commands (* = required):
+
+    *`vault_aws start`
+ 
+    `vault_aws ingest s3://{*BUCKET}/{KEY} --filter 'ext/{FILE_TYPE}' --recursion {DEPTH}` 
