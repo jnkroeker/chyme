@@ -15,3 +15,13 @@ Set up a vault development server:
 Set up a redis development server:
 
     `./redis-server`
+
+Run the CLI:
+
+    `go install chyme`
+
+Currently supported commands (* = required):
+
+    *`chyme start`
+ 
+    `chyme ingest s3://{*BUCKET}/{KEY} --filter 'ext/{FILE_TYPE}' --recursion {DEPTH}` 
