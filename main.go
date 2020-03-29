@@ -1,7 +1,7 @@
 package main
 
 import (
-	"vault_aws/cmd"
+	"chyme/cmd"
 )
 
 func main() {

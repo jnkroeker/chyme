@@ -1,8 +1,8 @@
 package ingest
 
 import (
-	"vault_aws/pkg/aws"
-	"vault_aws/internal/core"
+	"chyme/pkg/aws"
+	"chyme/internal/core"
 	"path/filepath"
 	"errors"
 	"net/url"

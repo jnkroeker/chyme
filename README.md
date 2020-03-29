@@ -18,10 +18,10 @@ Set up a redis development server:
 
 Run the CLI:
 
-    `go install vault_aws`
+    `go install chyme`
 
 Currently supported commands (* = required):
 
-    *`vault_aws start`
+    *`chyme start`
  
-    `vault_aws ingest s3://{*BUCKET}/{KEY} --filter 'ext/{FILE_TYPE}' --recursion {DEPTH}` 
+    `chyme ingest s3://{*BUCKET}/{KEY} --filter 'ext/{FILE_TYPE}' --recursion {DEPTH}` 

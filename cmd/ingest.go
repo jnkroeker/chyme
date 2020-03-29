@@ -9,7 +9,7 @@ import (
 	"encoding/json"
 	"github.com/spf13/cobra"
 	"github.com/joho/godotenv"
-	"vault_aws/internal/ingest"
+	"chyme/internal/ingest"
 	httptransport "github.com/go-kit/kit/transport/http"
 )
 

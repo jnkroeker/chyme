@@ -5,7 +5,7 @@ import (
 )
 
 var MainCmd = &cobra.Command{
-	Use: "vault_aws",
+	Use: "chyme",
 	Short: "extract transform load",
 	Version: "1",
 }
