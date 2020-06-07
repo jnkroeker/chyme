@@ -12,7 +12,7 @@ import (
 
 const (
 	vaultAddr = "http://localhost:8200"
-	vaultStaticToken = "s.FMtWzRspvkYIvNerpUVBwxg7" // this value will change each time a new vault -dev server is created
+	vaultStaticToken = "s.Ic5BP72sCAobcKJVblmylbHY" // this value will change each time a new vault -dev server is created
 	vaultStsSecret = "aws/sts/assume_role_s3_sqs"
 )
 

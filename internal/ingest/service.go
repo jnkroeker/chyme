@@ -1,6 +1,7 @@
 package ingest
 
 import (
+	"fmt"
 	"chyme/pkg/aws"
 	"chyme/internal/core"
 	"path/filepath"
@@ -55,6 +56,10 @@ func (i *ingestService) Ingest(bucketUrl *url.URL, filterString string, recursio
 	}
 
 	filtered, err := filter(bucketUrl)
+	fmt.Println(bucketUrl)
+	fmt.Println(filterString)
+	fmt.Println(filtered)
+	fmt.Println(i.ResourceSetKey)
 	if err != nil {
 		return 0, err
 	}
@@ -79,6 +84,7 @@ func (i *ingestService) ingestBucket(bucketUrl *url.URL, filter FilterFunc, dept
 			Host: bucketUrl.Host,
 			Path: *obj.Key,
 		})
+		fmt.Println(newResource)
 		if newResource == "" {
 			return nil
 		}

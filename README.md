@@ -24,4 +24,4 @@ Currently supported commands (* = required):
 
     *`chyme start`
  
-    `chyme ingest s3://{*BUCKET}/{KEY} --filter 'ext/{FILE_TYPE}' --recursion {DEPTH}` 
+    `chyme ingest https://s3.us-east-1.amazonaws.com/{*BUCKET}/{KEY} --filter 'ext/{FILE_TYPE}' --recursion {DEPTH}` 

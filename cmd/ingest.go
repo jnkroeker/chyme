@@ -64,7 +64,7 @@ var ingestCmd = &cobra.Command{
 		var buf bytes.Buffer
 		json.NewEncoder(&buf).Encode(req)
 
-		res, err := http.Post("http://localhost:8080/ingest", "application/json", &buf)
+		res, err := http.Post("http://localhost:8080/ingest", "application/json", &buf) 
 		if err != nil {
 			errors.New("error making ingest request: " + err.Error())
 		}
