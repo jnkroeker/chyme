@@ -1,37 +1,41 @@
-package cmd
+package main
 
 import (
-	"chyme/internal/core"
-	"github.com/aws/aws-sdk-go/aws"
+	"fmt"
+	"os"
+
+	"docker.io/go-docker"
+	"kroekerlabs.dev/chyme/services/internal/core"
+	"kroekerlabs.dev/chyme/services/pkg/aws"
+	amzaws "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/hashicorp/vault/api"
 	"github.com/go-redis/redis"
 )
 
-const (
-	vaultAddr = "http://localhost:8200"
-	vaultStaticToken = "s.Ic5BP72sCAobcKJVblmylbHY" // this value will change each time a new vault -dev server is created
-	vaultStsSecret = "aws/sts/assume_role_s3_sqs"
-)
+/* Resource Builders */
 
 func buildAwsSession() *session.Session {
 	config := &api.Config{
-		Address: vaultAddr,
+		Address: chConfig.VaultAddress,
 	}
 
 	client, err := api.NewClient(config)
 	if err != nil {
+		fmt.Println("New Vault Client Fatal: " + err.Error())
 		return nil
 	}
-	client.SetToken(vaultStaticToken)
+	client.SetToken(chConfig.VaultStaticToken)
 	c := client.Logical()
 	options := map[string]interface{}{
 		"ttl": "30m",
 	}
-	s, err := c.Write(vaultStsSecret, options)
+	s, err := c.Write(chConfig.VaultStsSecret, options)
 	if err != nil {
+		fmt.Println("Write Secret Fatal: " + err.Error())
 		return nil
 	}
 
@@ -43,10 +47,10 @@ func buildAwsSession() *session.Session {
 
 	creds := credentials.NewStaticCredentials(key, secret, token)
 
-	sess := session.Must(session.NewSession(&aws.Config{
+	sess := session.Must(session.NewSession(&amzaws.Config{
 		Credentials: creds,
-		MaxRetries: aws.Int(3),
-		Region: aws.String("us-east-1"),
+		MaxRetries: amzaws.Int(3),
+		Region: amzaws.String("us-east-1"),
 	}))
 
 	return sess
@@ -54,14 +58,30 @@ func buildAwsSession() *session.Session {
 
 func getS3Service(sess *session.Session) *s3.S3 {
 	endpoint := "" // this should be an environment variable (look into use of github.com/joho/godotenv)
-	return s3.New(sess, &aws.Config{
-		Endpoint: aws.String(endpoint),
+	return s3.New(sess, &amzaws.Config{
+		Endpoint: amzaws.String(endpoint),
 	})
 }
 
+func getSQSService(sess *session.Session) *sqs.SQS {
+	endpoint := "" // this should be an environment variable
+	return sqs.New(sess, &amzaws.Config{
+		Endpoint: amzaws.String(endpoint),
+	})
+}
+
+func getSQSQueue(client *sqs.SQS, name string) *aws.SqsQueue {
+	q, err := aws.NewSQSQueue(client, name)
+	if err != nil {
+		fmt.Println("Fatal: " + err.Error())
+		os.Exit(1)
+	}
+	return q
+}
+
 func getRedisClient() *redis.Client {
-	redisAddr := "localhost:6379" // should be environment variable
-	redisPwd  := "" // should be environment variable, no password set on dev redis-server
+	redisAddr := chConfig.RedisAddress //"localhost:6379"
+	redisPwd  := chConfig.RedisPassword //"" // no password set on dev redis-server
 
 	cli := redis.NewClient(&redis.Options{
 		Addr:     redisAddr,
@@ -74,4 +94,29 @@ func getRedisClient() *redis.Client {
 
 func getResourceRepository(client *redis.Client) core.ResourceRepository {
 	return core.NewRedisResourceRepository(client)
+}
+
+func getDockerClient() *docker.Client {
+	cli, err := docker.NewEnvClient()
+	if err != nil {
+		fmt.Println(fmt.Errorf("Could not connect to Docker: %s", err))
+		os.Exit(1)
+	}
+	return cli
+}
+
+/* Signal handling */
+
+func doneOnSignal(doneCh chan<- bool, sigCh <-chan os.Signal) {
+	sig := <-sigCh
+	// level.Info(logger).Log("msg", "Caught signal, terminating gracefully.", "signal", sig)
+	fmt.Println(fmt.Errorf("Caught signal %s , terminating gracefully", sig))
+	doneCh <- true
+}
+
+func CheckFatal(err error) {
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "fatal: %s\n", err.Error())
+		os.Exit(1)
+	}
 }

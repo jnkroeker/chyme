@@ -2,15 +2,16 @@ package ingest
 
 import (
 	"regexp"
-	"net/url"
 	"strings"
 	"errors"
 	"fmt"
+
+	"kroekerlabs.dev/chyme/services/internal/core"
 )
 
 /** Filters **/
 
-type FilterFunc = func(resource *url.URL) (string, error)
+type FilterFunc = func(resource *core.Resource) *core.Resource
 
 type ResourceFilter struct {
 	Description string
@@ -18,26 +19,33 @@ type ResourceFilter struct {
 }
 
 var FilterRegistry = map[string]ResourceFilter{
-	// "identity": {"Applies no filter.", NewIdentityFilter},
+	"identity": {"Applies no filter.", NewIdentityFilter},
 	"ext":      {"Filters by file extension. Example: ext/txt", NewExtFilter},
 }
 
 func NewExtFilter(args []string) (FilterFunc, error) {
-	// regex here looks for '.' speficifally and supplants %s with args[0], our extension
+	// regex here looks for '.' specificly and supplants %s with args[0], our extension
 	// will accept anything before the '.'
 	re, err := regexp.Compile(fmt.Sprintf(`^(.+)\.%s$`, args[0]))
 	if err != nil {
 		return nil, fmt.Errorf("extension regexp failed to compile: %s", err.Error())
 	}
-	return func(resource *url.URL) (string, error) {
-		b, err := resource.MarshalBinary()
-		if err != nil {
-			return "error converting url to binary", err
+	fmt.Sprintf("regex: %s", re)
+	return func(resource *core.Resource) *core.Resource {
+		// b, err := resource.MarshalBinary()
+		// if err != nil {
+		// 	return "error converting url to binary", err
+		// }
+		if re.Match([]byte(resource.Url.String())) {
+			return resource
 		}
-		if re.Match([]byte(b)) {
-			return resource.String(), nil
-		}
-		return "", ErrPatternMatch
+		return nil
+	}, nil
+}
+
+func NewIdentityFilter(_ []string) (FilterFunc, error) {
+	return func(resource *core.Resource) *core.Resource {
+		return resource
 	}, nil
 }
 
