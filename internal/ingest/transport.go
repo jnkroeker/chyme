@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"net/http"
 	"github.com/go-kit/kit/endpoint"
+	"kroekerlabs.dev/chyme/services/internal/core"
 )
 
 // gRPC requests
@@ -17,7 +18,7 @@ type IngestRequest struct {
 }
 
 type IngestResponse struct {
-	RES int64 `json:"res"`
+	RES int `json:"res"`
 	Err string `json:"err,omitempty"`
 }
 
@@ -25,12 +26,12 @@ type IngestResponse struct {
 func MakeIngestEndpoint(svc IngestService) endpoint.Endpoint {
 	return func (_ context.Context, request interface{}) (interface{}, error) {
 		req := request.(IngestRequest)
-		url, err := url.Parse(req.URL)
+		sourceUrl, err := url.Parse(req.URL)
 
 		if err != nil {
 			return IngestResponse{0, err.Error()}, err
 		}
-		res, err := svc.Ingest(url, req.Filter, req.RecursionDepth)
+		res, err := svc.Ingest(&core.Resource{Url: sourceUrl}, req.Filter, req.RecursionDepth)
 		if err != nil {
 			return IngestResponse{res, err.Error()}, nil
 		}
