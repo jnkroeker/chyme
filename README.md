@@ -12,12 +12,15 @@ Set up a vault development server:
     `vault write aws/config/root 
     access_key="..." secret_key="..." region="us-east-1"` 
     with jnkroeker IAM user credentials 
+    // TODO: hide these before committing to source ctrl
+    (AKIA6B5YAYXJTZQP3RWQ, +DGuzS/tvWp15ASTGAlNPqp/8KCc7FqFvyGVXNax)
 
     `vault read aws/config/root` 
     `vault secrets list`
 
     `vault write aws/roles/assume_role_s3_sqs 
     role_arns=<vault_s3_sqs_engineer ARN> credential_type=assumed_role`
+    (arn:aws:iam::966216697299:role/vault_s3_sqs_engineer)
 
     //dont do this if you want to run chyme right away
     `vault write aws/sts/assume_role_s3_sqs ttl=15m`
@@ -113,5 +116,5 @@ CHANGELOG:
                     onto container at /in 
     
     2021-05-21: all stages of chyme work; 
-                    pulls a .mov file from S3, processes it using ffmpeg docker container, uploads mpg-dash manifest file to another S3 bucket
+                    pulls a .mov file from S3, processes it using ffmpeg docker container, uploads mpg-dash manifest file to another S3
 

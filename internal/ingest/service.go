@@ -3,12 +3,13 @@ package ingest
 import (
 	"fmt"
 	// "strings"
-	"kroekerlabs.dev/chyme/services/pkg/aws"
-	"kroekerlabs.dev/chyme/services/internal/core"
-	"path/filepath"
 	"errors"
 	"net/url"
+	"path/filepath"
+
 	"github.com/aws/aws-sdk-go/service/s3"
+	"kroekerlabs.dev/chyme/services/internal/core"
+	"kroekerlabs.dev/chyme/services/pkg/aws"
 )
 
 type IngestService interface {
@@ -17,19 +18,23 @@ type IngestService interface {
 
 /* fields that start with a lowercase letter are package internal
 * `ResourceRepository:` must be uppercase to be send on to New()
-*/
+ */
 // the redis.Client is now in the resourceRepository
 type Config struct {
-	ResourceRepository  core.ResourceRepository
+	ResourceRepository core.ResourceRepository
 	// redis			    *redis.Client
-	ResourceSetKey      string
-	S3                  *s3.S3
+	ResourceSetKey string
+	S3             *s3.S3
 }
 
 type ingestService struct {
 	Config
 }
 
+// TODO: returning a pointer to an unexported struct type
+// which has an exported attribute
+// masked in an interface return value
+// major smell
 func New(config Config) IngestService {
 
 	svc := &ingestService{
@@ -78,20 +83,20 @@ func (i *ingestService) ingestPrefix(resource *core.Resource, filter FilterFunc,
 
 	bucket := aws.NewS3Bucket(i.S3, resource.Url.Host) // strings.Trim(bucketUrl.Path, "/")
 
-	bi, err := i.ResourceRepository.BulkInsert(i.ResourceSetKey) 
+	bi, err := i.ResourceRepository.BulkInsert(i.ResourceSetKey)
 	if err != nil {
 		return 0, err
 	}
-	
+
 	err = bucket.ListObjects(&aws.ListObjectsOptions{
 		RootPrefix: resource.Url.Path,
-		Depth: depth,
+		Depth:      depth,
 	}, func(obj *s3.Object) error {
 		newResource := filter(&core.Resource{
 			Url: &url.URL{
-				Scheme: resource.Url.Scheme, 
-				Host: resource.Url.Host,
-				Path: *obj.Key,
+				Scheme: resource.Url.Scheme,
+				Host:   resource.Url.Host,
+				Path:   *obj.Key,
 			},
 		})
 		if newResource == nil {

@@ -35,6 +35,8 @@ type ChymeConfig struct {
 	VaultStsSecret          string
 }
 
+// TODO: Why is this method using pointer semantics?
+// json.MarshalIndent does not require a pointer as the first parameter
 func (c *ChymeConfig) String() string {
 	str, err := json.MarshalIndent(c, "  ", "  ")
 	if err != nil {
@@ -62,6 +64,8 @@ func loadConfigFromEnv() ChymeConfig {
 	}
 }
 
+// TODO: is it appropriate to log at this level?
+// Appears so at first take, this is a 'business' layer api
 func main() {
 
 	loglevel := level.AllowInfo()

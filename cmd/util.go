@@ -5,34 +5,40 @@ import (
 	"os"
 
 	"docker.io/go-docker"
-	"kroekerlabs.dev/chyme/services/internal/core"
-	"kroekerlabs.dev/chyme/services/pkg/aws"
 	amzaws "github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/sqs"
-	"github.com/hashicorp/vault/api"
 	"github.com/go-redis/redis"
+	"github.com/hashicorp/vault/api"
+	"kroekerlabs.dev/chyme/services/internal/core"
+	"kroekerlabs.dev/chyme/services/pkg/aws"
 )
 
 /* Resource Builders */
 
+// TODO: definitely need to return a pointer here, there can not be a copy of an aws session
+// aws sdk returns a pointer from session.Must
 func buildAwsSession() *session.Session {
-	config := &api.Config{
-		Address: chConfig.VaultAddress,
-	}
 
-	client, err := api.NewClient(config)
+	client, err := api.NewClient(&api.Config{
+		Address: chConfig.VaultAddress,
+	})
+
 	if err != nil {
 		fmt.Println("New Vault Client Fatal: " + err.Error())
 		return nil
 	}
+
 	client.SetToken(chConfig.VaultStaticToken)
 	c := client.Logical()
+
+	// TODO: empty interface usage?
 	options := map[string]interface{}{
 		"ttl": "30m",
 	}
+
 	s, err := c.Write(chConfig.VaultStsSecret, options)
 	if err != nil {
 		fmt.Println("Write Secret Fatal: " + err.Error())
@@ -49,8 +55,8 @@ func buildAwsSession() *session.Session {
 
 	sess := session.Must(session.NewSession(&amzaws.Config{
 		Credentials: creds,
-		MaxRetries: amzaws.Int(3),
-		Region: amzaws.String("us-east-1"),
+		MaxRetries:  amzaws.Int(3),
+		Region:      amzaws.String("us-east-1"),
 	}))
 
 	return sess
@@ -81,7 +87,7 @@ func getSQSQueue(client *sqs.SQS, name string) *aws.SqsQueue {
 
 func getRedisClient() *redis.Client {
 	redisAddr := chConfig.RedisAddress //"localhost:6379"
-	redisPwd  := chConfig.RedisPassword //"" // no password set on dev redis-server
+	redisPwd := chConfig.RedisPassword //"" // no password set on dev redis-server
 
 	cli := redis.NewClient(&redis.Options{
 		Addr:     redisAddr,

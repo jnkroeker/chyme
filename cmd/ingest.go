@@ -34,11 +34,12 @@ var (
 	filter         string
 )
 
+// TODO: using the global logger here, defined in main() back in cmd.go
+// I want to log to a file, not stdout as this does
 var ingestStartCmd = &cobra.Command{
 	Use:   "start",
 	Short: "start listening at /ingest for ingest service requests",
 	Run: func(cmd *cobra.Command, args []string) {
-		// fmt.Println("start ingest")
 		level.Debug(logger).Log("cmd", "start")
 		logger := log.With(logger, "svc", "ingest")
 
@@ -91,7 +92,13 @@ var ingestCmd = &cobra.Command{
 	},
 }
 
+// TODO: IngestService return type is an interface.
+// Why?
+// Is there not only ever one implementation of it?
+
 func buildService(logger log.Logger) ingest.IngestService {
+
+	// these functions are in main package, util.go file
 	awsSession := buildAwsSession()
 	s3Client := getS3Service(awsSession)
 	redisClient := getRedisClient()
