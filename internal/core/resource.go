@@ -3,17 +3,18 @@ package core
 import (
 	"crypto/sha1"
 	"encoding/hex"
-	"os/exec"
+	"fmt"
+	"io"
 	"net/url"
+	"os/exec"
 	"strconv"
 	"strings"
-	"io"
-	"fmt"
+
 	"github.com/go-redis/redis"
 )
 
 type Resource struct {
-	Url   *url.URL `json:"url"`
+	Url *url.URL `json:"url"`
 	// Phony indicates whether or not resource should be downloaded/uploaded during processing
 	Phony bool `json:"phony"`
 	hash  string
@@ -33,6 +34,10 @@ func (r *Resource) Hash() string {
 	return r.hash
 }
 
+// TODO: there is really no need for this interface
+// although this is a part of the code that could change
+// we don't have another type of resource repository besides this one
+// using an interface is overkill here and makes the code less readable
 type ResourceRepository interface {
 	Pop(setKey string, count int) ([]*Resource, error)
 	Add(setKey string, resources ...*Resource) (int, error)
@@ -41,6 +46,9 @@ type ResourceRepository interface {
 }
 
 // Concrete redis implementation of ResourceRepository.
+// TODO: remember Bill saying it is never safe to make a copy of an address that a pointer is pointing to?
+// i.e. it is never safe to go from pointer to value semantics
+// is this why the ResourceRepository interface is implemented using pointer semantics?
 type redisResourceRepository struct {
 	client *redis.Client
 }
@@ -111,7 +119,7 @@ type BulkResourceInserter interface {
 	// Insert a resource into the repository. The implementation of this function should be thread-safe.
 	Insert(resource *Resource) error
 	Close() error
-} 
+}
 
 // Concrete redis implementation of the BulkResourceInserter
 type redisBulkInserter struct {
@@ -120,7 +128,7 @@ type redisBulkInserter struct {
 	wc     io.WriteCloser
 }
 
-func (i *redisBulkInserter) Insert(resource *Resource) (error) {
+func (i *redisBulkInserter) Insert(resource *Resource) error {
 	// _, err := io.WriteString(i.wc, Encode([]string{"SADD", i.setKey, resource}))
 	_, err := i.wc.Write([]byte(Encode([]string{"SADD", i.setKey, resource.String()})))
 	if err != nil {
@@ -136,7 +144,6 @@ func (i *redisBulkInserter) Close() error {
 	}
 	return i.cmd.Wait()
 }
-
 
 // redis utilities
 // functionality for working with Redis Serialization Protocol
