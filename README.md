@@ -11,9 +11,7 @@ Set up a vault development server:
 
     `vault write aws/config/root 
     access_key="..." secret_key="..." region="us-east-1"` 
-    with jnkroeker IAM user credentials 
-    // TODO: hide these before committing to source ctrl
-    (AKIA6B5YAYXJTZQP3RWQ, +DGuzS/tvWp15ASTGAlNPqp/8KCc7FqFvyGVXNax)
+    with IAM user credentials 
 
     `vault read aws/config/root` 
     `vault secrets list`
