@@ -62,6 +62,7 @@ func buildAwsSession() *session.Session {
 	return sess
 }
 
+// S3 api factory function New() returns a pointer
 func getS3Service(sess *session.Session) *s3.S3 {
 	endpoint := "" // this should be an environment variable (look into use of github.com/joho/godotenv)
 	return s3.New(sess, &amzaws.Config{
@@ -85,6 +86,7 @@ func getSQSQueue(client *sqs.SQS, name string) *aws.SqsQueue {
 	return q
 }
 
+// go redis sdk factory function NewClient() returns a pointer
 func getRedisClient() *redis.Client {
 	redisAddr := chConfig.RedisAddress //"localhost:6379"
 	redisPwd := chConfig.RedisPassword //"" // no password set on dev redis-server

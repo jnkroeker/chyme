@@ -65,6 +65,9 @@ var ingestCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		level.Debug(logger).Log("cmd", "ingest", "url", args[0])
 
+		// TODO: where on earth are filter and recursionDepth coming from?
+		// they are flags passed to the ingest command from command line
+		// must add comment that explains this or else lay this out better
 		req := &ingest.IngestRequest{
 			URL:            args[0],
 			Filter:         filter,

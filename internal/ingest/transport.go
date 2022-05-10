@@ -3,8 +3,9 @@ package ingest
 import (
 	"context"
 	"encoding/json"
-	"net/url"
 	"net/http"
+	"net/url"
+
 	"github.com/go-kit/kit/endpoint"
 	"kroekerlabs.dev/chyme/services/internal/core"
 )
@@ -18,13 +19,13 @@ type IngestRequest struct {
 }
 
 type IngestResponse struct {
-	RES int `json:"res"`
+	RES int    `json:"res"`
 	Err string `json:"err,omitempty"`
 }
 
-/** function names beginning with a lowercase letter are not exported from the package **/
+// The empty interface request parameter and response on the return function value is the signiture of a go-kit endpoint
 func MakeIngestEndpoint(svc IngestService) endpoint.Endpoint {
-	return func (_ context.Context, request interface{}) (interface{}, error) {
+	return func(_ context.Context, request interface{}) (interface{}, error) {
 		req := request.(IngestRequest)
 		sourceUrl, err := url.Parse(req.URL)
 
