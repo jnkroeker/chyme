@@ -7,40 +7,47 @@ import (
 	"sync"
 	"time"
 
+	"github.com/hashicorp/go-multierror"
 	"kroekerlabs.dev/chyme/services/internal/core"
 	"kroekerlabs.dev/chyme/services/internal/worker/hooks"
-	"github.com/hashicorp/go-multierror"
 )
 
-type Service interface {
-	Poll(ctx context.Context, processErrCh chan error) error 
-	Process(ctx context.Context, task *core.Task, taskHooks hooks.Interface, stage ProcessStage) (ProcessStage, error) 
-	InProcess() []*core.Task
-}
-
-type Config struct {
-	TaskQueue    core.TaskQueue 
+type Service struct {
+	TaskQueue    core.TaskQueue
 	TaskLoader   core.TaskLoader
-	TaskExecutor core.TaskExecutor 
+	TaskExecutor core.TaskExecutor
 	Hooks        hooks.Registry
 	Persister    Persister
-	Version      string 
+	Version      string
 	// Concurrency  int
+	sync.Mutex
+	inProcess              map[string]*core.Task
+	inProcNotificationChan chan int
 }
 
-type service struct {
-	*Config 
-	sync.Mutex 
-	inProcess              map[string]*core.Task 
-	inProcNotificationChan chan int 
-}
+// Return a pointer becasue we have a mutex involved. It is never safe to copy (value semantics) a mutex
+func New(q core.TaskQueue, tl core.TaskLoader, te core.TaskExecutor, hooks hooks.Registry, p Persister, v string) *Service {
+	inProcess := make(map[string]*core.Task)
 
-func New(config *Config) Service {
-	return &service{Config: config, inProcess: make(map[string]*core.Task)}
+	// TODO: this channel was left out of the original New() method
+	// There is a method to check if this channel exists below
+	// what is its significance?
+	inProcNotificationChan := make(chan int)
+	return &Service{
+		q,
+		tl,
+		te,
+		hooks,
+		p,
+		v,
+		sync.Mutex{},
+		inProcess,
+		inProcNotificationChan,
+	}
 }
 
 // Polls the task queue and processes received Tasks.
-func (s *service) Poll(ctx context.Context, processErrCh chan error) error {
+func (s *Service) Poll(ctx context.Context, processErrCh chan error) error {
 	// nInProc := len(s.InProcess())
 	// for nInProc >= s.Concurrency {
 	// 	nInProc = <-s.requestInprocNotification()
@@ -48,7 +55,7 @@ func (s *service) Poll(ctx context.Context, processErrCh chan error) error {
 
 	messages, err := s.TaskQueue.Dequeue(1)
 	if err != nil {
-		return err 
+		return err
 	}
 
 	for _, message := range messages {
@@ -56,7 +63,7 @@ func (s *service) Poll(ctx context.Context, processErrCh chan error) error {
 		s.setInProcess(message.Task)
 		go func(msg *core.TaskMessage) {
 			if err := s.processMessage(ctx, msg, Start); err != nil {
-				processErrCh <- err 
+				processErrCh <- err
 			}
 			s.clearInProcess(msg.Task)
 		}(message)
@@ -65,15 +72,15 @@ func (s *service) Poll(ctx context.Context, processErrCh chan error) error {
 	return nil
 }
 
-func (s *service) setInProcess(task *core.Task) {
+func (s *Service) setInProcess(task *core.Task) {
 	s.Lock()
 	defer s.Unlock()
 
-	s.inProcess[task.Hash()] = task 
+	s.inProcess[task.Hash()] = task
 	s.inProcNotify(len(s.inProcess))
 }
 
-func (s *service) clearInProcess(task *core.Task) {
+func (s *Service) clearInProcess(task *core.Task) {
 	s.Lock()
 	defer s.Unlock()
 
@@ -81,7 +88,7 @@ func (s *service) clearInProcess(task *core.Task) {
 	s.inProcNotify(len(s.inProcess))
 }
 
-func (s *service) processMessage(ctx context.Context, message *core.TaskMessage, stage ProcessStage) error {
+func (s *Service) processMessage(ctx context.Context, message *core.TaskMessage, stage ProcessStage) error {
 	// Resolve the hooks specified for the Task
 	taskHooks, ok := s.Hooks[message.Task.Hooks]
 	if !ok {
@@ -92,7 +99,7 @@ func (s *service) processMessage(ctx context.Context, message *core.TaskMessage,
 	// If timeout already exceeded, then a different machine will pick it up
 	untilTimeout := time.Until(message.Timeout)
 	if untilTimeout < time.Second*10 {
-		return nil 
+		return nil
 	}
 	timeout := time.AfterFunc(untilTimeout, func() { s.TaskQueue.Delete(message) })
 
@@ -105,7 +112,7 @@ func (s *service) processMessage(ctx context.Context, message *core.TaskMessage,
 	errs := &multierror.Error{}
 	errs = multierror.Append(errs, err)
 
-	// Clean up any resources used by this Task 
+	// Clean up any resources used by this Task
 	errs = multierror.Append(errs, s.TaskLoader.Clean(message.Task))
 	errs = multierror.Append(errs, s.TaskExecutor.Clean(message.Task))
 
@@ -128,7 +135,7 @@ const (
 )
 
 // Downloads, executes and uploads a single Task.
-func (s *service) Process(ctx context.Context, task *core.Task, taskHooks hooks.Interface, stage ProcessStage) (ProcessStage, error) {
+func (s *Service) Process(ctx context.Context, task *core.Task, taskHooks hooks.Interface, stage ProcessStage) (ProcessStage, error) {
 	result := &core.ExecutionResult{}
 	execErr := &multierror.Error{}
 
@@ -138,7 +145,7 @@ func (s *service) Process(ctx context.Context, task *core.Task, taskHooks hooks.
 			return Start, fmt.Errorf("failed to create workspace: %s", err.Error())
 		}
 		fallthrough
-	case Download: 
+	case Download:
 		if err := taskHooks.PreDownload(ctx, task); err != nil {
 			return Download, fmt.Errorf("during pre-download hook: %s", err.Error())
 		}
@@ -155,7 +162,7 @@ func (s *service) Process(ctx context.Context, task *core.Task, taskHooks hooks.
 			fmt.Println("Fatal: " + err.Error())
 		}
 		if isCtxCanceled(err) {
-			return Execute, err 
+			return Execute, err
 		}
 		result = res
 		execErr = multierror.Append(execErr, err)        // Error from Tsunami infrastructure
@@ -178,12 +185,12 @@ func (s *service) Process(ctx context.Context, task *core.Task, taskHooks hooks.
 	default:
 		return Start, fmt.Errorf("invalid process stage %s", stage)
 	}
-	
+
 	return Complete, nil
 }
 
 // TODO: Make this return something that is not a pointer to this service's internal state.
-func (s *service) InProcess() []*core.Task {
+func (s *Service) InProcess() []*core.Task {
 	s.Lock()
 	defer s.Unlock()
 	return taskMapToSlice(s.inProcess)
@@ -191,7 +198,7 @@ func (s *service) InProcess() []*core.Task {
 
 // inProcNotify is called from a worker goroutine to notify the main goroutine when the number of in process tasks
 // changes.
-func (s *service) inProcNotify(length int) {
+func (s *Service) inProcNotify(length int) {
 	if s.inProcNotificationChan != nil {
 		s.inProcNotificationChan <- length
 		s.inProcNotificationChan = nil

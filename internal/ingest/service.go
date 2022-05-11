@@ -1,9 +1,8 @@
 package ingest
 
 import (
-	"fmt"
-	// "strings"
 	"errors"
+	"fmt"
 	"net/url"
 	"path/filepath"
 
@@ -12,39 +11,26 @@ import (
 	"kroekerlabs.dev/chyme/services/pkg/aws"
 )
 
-type IngestService interface {
-	Ingest(resource *core.Resource, filterString string, recursionDepth int) (int, error)
-}
-
-/* fields that start with a lowercase letter are package internal
-* `ResourceRepository:` must be uppercase to be send on to New()
- */
 // the redis.Client is now in the resourceRepository
-type Config struct {
+type IngestService struct {
 	ResourceRepository core.ResourceRepository
+	ResourceSetKey     string
 	// redis			    *redis.Client
-	ResourceSetKey string
-	S3             *s3.S3
+	S3 *s3.S3
 }
 
-type ingestService struct {
-	Config
-}
+func New(repository core.ResourceRepository, key string, s3 *s3.S3) IngestService {
 
-// TODO: returning a pointer to an unexported struct type
-// which has an exported attribute
-// masked in an interface return value
-// major smell
-func New(config Config) IngestService {
-
-	svc := &ingestService{
-		config,
+	svc := IngestService{
+		repository,
+		key,
+		s3,
 	}
 
 	return svc
 }
 
-func (i *ingestService) Ingest(resource *core.Resource, filterString string, recursionDepth int) (int, error) {
+func (i IngestService) Ingest(resource *core.Resource, filterString string, recursionDepth int) (int, error) {
 	//send 'ext/pdf' to use NewExtFilter or 'identity/...' for other method
 	filter, err := NewFilter(filterString)
 	if err != nil {
@@ -75,7 +61,7 @@ func (i *ingestService) Ingest(resource *core.Resource, filterString string, rec
 	return res, nil
 }
 
-func (i *ingestService) ingestPrefix(resource *core.Resource, filter FilterFunc, depth int) (int, error) {
+func (i IngestService) ingestPrefix(resource *core.Resource, filter FilterFunc, depth int) (int, error) {
 	fmt.Println("here in ingestPrefix")
 	fmt.Println(resource.Url.Scheme)
 	fmt.Println(resource.Url.Host)
