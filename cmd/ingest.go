@@ -77,16 +77,16 @@ var ingestCmd = &cobra.Command{
 
 		res, err := http.Post("http://localhost"+chConfig.IngestListenPort+"/ingest", "application/json", &buf)
 		if err != nil {
-			errors.New("error making ingest request: " + err.Error())
+			CheckFatal(errors.New("error making ingest request: " + err.Error()))
 		}
 		if res.StatusCode != 200 {
-			errors.New("response not ok: " + res.Status)
+			CheckFatal(errors.New("response not ok: " + res.Status))
 		}
 
 		var ingestResponse ingest.IngestResponse
 		json.NewDecoder(res.Body).Decode(&ingestResponse)
 		if ingestResponse.Err != "" {
-			errors.New("ingest failed: " + ingestResponse.Err)
+			CheckFatal(errors.New("ingest failed: " + ingestResponse.Err))
 		}
 
 		fmt.Println("Ingest Success")
