@@ -2,43 +2,38 @@ package tasker
 
 import (
 	"fmt"
+
 	"kroekerlabs.dev/chyme/services/internal/core"
 )
 
-type Service interface {
-	CreateTasks(count int) (int, error)
-	ShouldCreate() (int, error)
-	Poll() error 
-}
-
-type service struct {
-	*Config 
-}
-
-type Config struct {
+type Service struct {
 	ResourceSetKey     string
 	ResourceRepository core.ResourceRepository
 	TaskRepository     core.TaskRepository
-	TaskQueue          core.TaskQueue 
+	TaskQueue          core.TaskQueue
 	Templater          Templater
-
 	BatchSize          int
 }
 
-func New(config *Config) Service {
-	return &service{
-		Config: config,
+func New(rsKey string, rr core.ResourceRepository, tr core.TaskRepository, q core.TaskQueue, t Templater, batchSize int) Service {
+	return Service{
+		rsKey,
+		rr,
+		tr,
+		q,
+		t,
+		batchSize,
 	}
 }
 
 // Creates `count` tasks using the key repository as the source
 // and the task queue as the task destination
-func (s *service) CreateTasks(count int) (int, error) {
+func (s Service) CreateTasks(count int) (int, error) {
 	sources, err := s.ResourceRepository.Pop(s.ResourceSetKey, count)
 	fmt.Println("sources for tasks")
 	fmt.Println(sources)
 	if err != nil {
-		return 0, err 
+		return 0, err
 	}
 
 	// In the loop below we shift resources out of the source slice once they are successfully processed. This defer
@@ -65,7 +60,7 @@ func (s *service) CreateTasks(count int) (int, error) {
 	return created, nil
 }
 
-func (s *service) ShouldCreate() (int, error) {
+func (s Service) ShouldCreate() (int, error) {
 	// messageCount, err := s.TaskQueue.MessageCount()
 	// if err != nil {
 	// 	return 0, err
@@ -82,7 +77,7 @@ func (s *service) ShouldCreate() (int, error) {
 	return s.BatchSize, nil
 }
 
-func (s *service) Poll() error {
+func (s Service) Poll() error {
 	fmt.Println("poll")
 	count, err := s.ShouldCreate()
 	if err != nil {
@@ -97,7 +92,7 @@ func (s *service) Poll() error {
 	return nil
 }
 
-func (s *service) enqueueTasks(tasks []*core.Task, shouldDeduplicate bool) (int, error) {
+func (s *Service) enqueueTasks(tasks []*core.Task, shouldDeduplicate bool) (int, error) {
 	created := 0
 
 	for _, task := range tasks {
@@ -117,13 +112,13 @@ func (s *service) enqueueTasks(tasks []*core.Task, shouldDeduplicate bool) (int,
 		// 	if !ok {
 		// 		return created, errors.New("unknown queue " + task.QueueAffinity)
 		// 	}
-		// 	queue = q 
+		// 	queue = q
 		// }
 		if err := queue.Enqueue(task); err != nil {
-			return created, err 
+			return created, err
 		}
 		if err := s.TaskRepository.Add(task); err != nil {
-			return created, err 
+			return created, err
 		}
 		created++
 	}

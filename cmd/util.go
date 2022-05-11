@@ -107,7 +107,7 @@ func getResourceRepository(client *redis.Client) core.ResourceRepository {
 func getDockerClient() *docker.Client {
 	cli, err := docker.NewEnvClient()
 	if err != nil {
-		fmt.Println(fmt.Errorf("Could not connect to Docker: %s", err))
+		fmt.Println(fmt.Errorf("could not connect to Docker: %s", err))
 		os.Exit(1)
 	}
 	return cli
@@ -118,7 +118,7 @@ func getDockerClient() *docker.Client {
 func doneOnSignal(doneCh chan<- bool, sigCh <-chan os.Signal) {
 	sig := <-sigCh
 	// level.Info(logger).Log("msg", "Caught signal, terminating gracefully.", "signal", sig)
-	fmt.Println(fmt.Errorf("Caught signal %s , terminating gracefully", sig))
+	fmt.Println(fmt.Errorf("caught signal %s , terminating gracefully", sig))
 	doneCh <- true
 }
 

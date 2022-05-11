@@ -15,7 +15,7 @@ import (
 )
 
 func init() {
-	ingestCmd.Flags().IntVarP(&recursionDepth, "recursion", "r", 0, "ingest recusion depth")
+	ingestCmd.Flags().IntVarP(&recursionDepth, "recursion", "r", 0, "ingest recursion depth")
 	ingestCmd.Flags().StringVarP(&filter, "filter", "f", "", "file type filter")
 
 	indexCommand.AddCommand(ingestStartCmd)
@@ -53,8 +53,7 @@ var ingestStartCmd = &cobra.Command{
 
 		http.Handle("/ingest", ingestHandler)
 		level.Info(logger).Log("msg", "Listening", "transport", "http")
-		// TODO: make :8080 an env variable in chConfig: 'ingestListenPort'
-		http.ListenAndServe(":8080", nil)
+		http.ListenAndServe(chConfig.IngestListenPort, nil)
 	},
 }
 
@@ -65,9 +64,8 @@ var ingestCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		level.Debug(logger).Log("cmd", "ingest", "url", args[0])
 
-		// TODO: where on earth are filter and recursionDepth coming from?
-		// they are flags passed to the ingest command from command line
-		// must add comment that explains this or else lay this out better
+		// filter and recursionDepth are flags passed to the ingest command from the command line
+		// and configured to be parsed out in the init() method in this file
 		req := &ingest.IngestRequest{
 			URL:            args[0],
 			Filter:         filter,
@@ -77,7 +75,7 @@ var ingestCmd = &cobra.Command{
 		var buf bytes.Buffer
 		json.NewEncoder(&buf).Encode(req)
 
-		res, err := http.Post("http://localhost:8080/ingest", "application/json", &buf)
+		res, err := http.Post("http://localhost"+chConfig.IngestListenPort+"/ingest", "application/json", &buf)
 		if err != nil {
 			errors.New("error making ingest request: " + err.Error())
 		}
@@ -112,11 +110,7 @@ func buildService(logger log.Logger) ingest.IngestService {
 
 	setKey := chConfig.ResourceSetKey //os.Getenv("RESOURCE_SET_KEY")
 
-	svc := ingest.New(ingest.Config{
-		ResourceRepository: resourceRepository,
-		ResourceSetKey:     setKey,
-		S3:                 s3Client,
-	})
+	svc := ingest.New(resourceRepository, setKey, s3Client)
 
 	return svc
 }

@@ -19,10 +19,7 @@ var (
 
 // Unified configuration for Chyme
 type ChymeConfig struct {
-	WorkerWorkDir           string
-	WorkerDockerUser        string
-	WorkerDockerPull        string
-	WorkerDockerRemove      string
+	IngestListenPort        string
 	RedisAddress            string
 	RedisPassword           string
 	ResourceSetKey          string
@@ -33,11 +30,13 @@ type ChymeConfig struct {
 	VaultAddress            string
 	VaultStaticToken        string // this value will change each time a new vault -dev server is created
 	VaultStsSecret          string
+	WorkerWorkDir           string
+	WorkerDockerUser        string
+	WorkerDockerPull        string
+	WorkerDockerRemove      string
 }
 
-// TODO: Why is this method using pointer semantics?
-// json.MarshalIndent does not require a pointer as the first parameter
-func (c *ChymeConfig) String() string {
+func (c ChymeConfig) String() string {
 	str, err := json.MarshalIndent(c, "  ", "  ")
 	if err != nil {
 		str = []byte("error marshaling struct: " + err.Error())
@@ -47,10 +46,7 @@ func (c *ChymeConfig) String() string {
 
 func loadConfigFromEnv() ChymeConfig {
 	return ChymeConfig{
-		WorkerWorkDir:           os.Getenv("CH_WORKER_WORKDIR"),
-		WorkerDockerUser:        os.Getenv("CH_WORKER_DOCKER_USER"),
-		WorkerDockerPull:        os.Getenv("CH_WORKER_DOCKER_PULL"),
-		WorkerDockerRemove:      os.Getenv("CH_WORKER_DOCKER_REMOVE"),
+		IngestListenPort:        os.Getenv("CH_INGEST_PORT"),
 		RedisAddress:            os.Getenv("CH_REDIS_ADDR"),
 		RedisPassword:           os.Getenv("CH_REDIS_PASSWORD"),
 		ResourceSetKey:          os.Getenv("CH_RESOURCE_SET"),
@@ -61,6 +57,10 @@ func loadConfigFromEnv() ChymeConfig {
 		VaultAddress:            os.Getenv("CH_VAULT_ADDR"),
 		VaultStaticToken:        os.Getenv("CH_VAULT_STATIC_TKN"),
 		VaultStsSecret:          os.Getenv("CH_VAULT_STS_SECRET"),
+		WorkerWorkDir:           os.Getenv("CH_WORKER_WORKDIR"),
+		WorkerDockerUser:        os.Getenv("CH_WORKER_DOCKER_USER"),
+		WorkerDockerPull:        os.Getenv("CH_WORKER_DOCKER_PULL"),
+		WorkerDockerRemove:      os.Getenv("CH_WORKER_DOCKER_REMOVE"),
 	}
 }
 

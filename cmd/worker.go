@@ -1,4 +1,4 @@
-package main 
+package main
 
 import (
 	"context"
@@ -10,10 +10,10 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/spf13/cobra"
 	"kroekerlabs.dev/chyme/services/internal/core"
 	"kroekerlabs.dev/chyme/services/internal/worker"
 	"kroekerlabs.dev/chyme/services/internal/worker/hooks"
-	"github.com/spf13/cobra"
 )
 
 func init() {
@@ -23,31 +23,31 @@ func init() {
 }
 
 var workerCmd = &cobra.Command{
-	Use: "worker",
+	Use:   "worker",
 	Short: "Chyme task execution service",
 }
 
 var workerStartCmd = &cobra.Command{
-	Use: "start",
+	Use:   "start",
 	Short: "Start the Worker service.",
 	Run: func(_ *cobra.Command, args []string) {
-		
+
 		sess := buildAwsSession()
 
 		/* TODO: might need new sts role for executing tasks in docker?
 		 *       look into using sts from aws-go-sdk rather than vault?
-		 */       
+		 */
 		s3Client := getS3Service(sess)
 
 		// Resource loader stuff
 
-		var defaultMetadata map[string]*string 
+		var defaultMetadata map[string]*string
 
 		s3Loader := core.NewS3ResourceLoader(s3Client, defaultMetadata)
 		resourceLoader := core.NewResourceLoader(map[string]core.ResourceLoader{s3Loader.Scheme(): s3Loader})
-		
+
 		workdir := filepath.Join(chConfig.WorkerWorkDir, "chyme")
-		
+
 		taskLoader := core.NewTaskLoader(resourceLoader, workdir)
 
 		// SQS queue stuff
@@ -81,19 +81,19 @@ var workerStartCmd = &cobra.Command{
 
 		// Create the service
 
-		svc := worker.New(&worker.Config{
-			TaskQueue:  taskQueue,
-			TaskLoader: taskLoader,
-			TaskExecutor: taskExecutor,
-			Persister: persister,
-			Hooks: map[string]hooks.Interface{
+		svc := worker.New(
+			taskQueue,
+			taskLoader,
+			taskExecutor,
+			map[string]hooks.Interface{
 				"mov": &hooks.MOV{
-					TaskLoader:       taskLoader,
-					ResourceLoader:   resourceLoader,
+					TaskLoader:     taskLoader,
+					ResourceLoader: resourceLoader,
 				},
 			},
-			Version: "0.0.1",
-		})
+			persister,
+			"0.0.1",
+		)
 
 		// Channels
 
@@ -104,7 +104,7 @@ var workerStartCmd = &cobra.Command{
 
 		errCh := make(chan error)
 		go func() {
-			err := <- errCh
+			err := <-errCh
 			fmt.Println(fmt.Errorf("SEVERE: unrecoverable error while processing Task: %s", err))
 		}()
 
@@ -137,7 +137,7 @@ func parseBoolOption(opt string, defaultTo bool) bool {
 
 func cancelOnSignal(f context.CancelFunc, sigCh <-chan os.Signal) {
 	sig := <-sigCh
-	fmt.Println(fmt.Errorf("Caught signal, cancelling processing.: %s", sig.String()))
+	fmt.Println(fmt.Errorf("caught signal, cancelling processing.: %s", sig.String()))
 	// level.Info(logger).Log("msg", "Caught signal, cancelling processing.", "signal", sig.String())
 	f()
 }
