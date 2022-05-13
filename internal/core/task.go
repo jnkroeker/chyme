@@ -2,19 +2,19 @@ package core
 
 import (
 	"context"
-	"sync"
-	"time"
 	"encoding/json"
 	"errors"
+	"os"
 	"path"
 	"path/filepath"
-	"os"
+	"sync"
+	"time"
 
-	"kroekerlabs.dev/chyme/services/pkg/hash"
-	"kroekerlabs.dev/chyme/services/pkg/aws"
-	"github.com/go-redis/redis"
 	amzaws "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/sqs"
+	"github.com/go-redis/redis"
+	"kroekerlabs.dev/chyme/services/pkg/aws"
+	"kroekerlabs.dev/chyme/services/pkg/hash"
 )
 
 // Represents a processing task.
@@ -30,14 +30,14 @@ type Task struct {
 	Timeout           time.Duration      `json:"timeout"`
 	Version           string             `json:"version"`
 
-	isDeleted bool 
+	isDeleted bool
 	hash      string
 }
 
 // TaskWorkspace represents the filesystem location allocated for Task execution
 type TaskWorkspace struct {
 	InputDir    string
-	OutputDir   string 
+	OutputDir   string
 	InternalDir string
 }
 
@@ -53,16 +53,8 @@ func (t *Task) Hash() string {
  *  TASK QUEUE
  */
 
-type TaskQueue interface {
-	Enqueue(task *Task) error 
-	Dequeue(max int) ([]*TaskMessage, error)
-	Delete(message *TaskMessage) error 
-	Fail(message *TaskMessage, err error) error
-	MessageCount() (int, error)
-}
-
 type TaskMessage struct {
-	Task          *Task 
+	Task          *Task
 	MessageHandle interface{}
 	Timeout       time.Time
 }
@@ -72,22 +64,22 @@ func (m *TaskMessage) Handle() interface{} {
 }
 
 // SQS-backed TaskQueue
-type sqsTaskQueue struct {
-	sqsQueue        *aws.SqsQueue 
+type SqsTaskQueue struct {
+	sqsQueue        *aws.SqsQueue
 	deadLetterQueue *aws.SqsQueue
 }
 
-func NewSQSTaskQueue(backingQueue *aws.SqsQueue, deadLetterQueue *aws.SqsQueue) TaskQueue {
-	return &sqsTaskQueue{backingQueue, deadLetterQueue}
+func NewSQSTaskQueue(backingQueue *aws.SqsQueue, deadLetterQueue *aws.SqsQueue) *SqsTaskQueue {
+	return &SqsTaskQueue{backingQueue, deadLetterQueue}
 }
 
 // Enqueues a Task.
-func (q *sqsTaskQueue) Enqueue(task *Task) error {
+func (q *SqsTaskQueue) Enqueue(task *Task) error {
 	return q.sqsQueue.Enqueue(task)
 }
 
 // Dequeues tasks.
-func (q *sqsTaskQueue) Dequeue(max int) ([]*TaskMessage, error) {
+func (q *SqsTaskQueue) Dequeue(max int) ([]*TaskMessage, error) {
 	messages, err := q.sqsQueue.Dequeue(max)
 	if err != nil {
 		return nil, err
@@ -113,7 +105,7 @@ func (q *sqsTaskQueue) Dequeue(max int) ([]*TaskMessage, error) {
 }
 
 // Deletes a task from the Queue. This method is idempotent.
-func (q *sqsTaskQueue) Delete(message *TaskMessage) error {
+func (q *SqsTaskQueue) Delete(message *TaskMessage) error {
 	message.Task.Lock()
 	defer message.Task.Unlock()
 
@@ -129,7 +121,7 @@ func (q *sqsTaskQueue) Delete(message *TaskMessage) error {
 }
 
 // Marks a task as failed by moving it to the DLQ.
-func (q *sqsTaskQueue) Fail(message *TaskMessage, err error) error {
+func (q *SqsTaskQueue) Fail(message *TaskMessage, err error) error {
 	if err := q.sqsQueue.Delete(message); err != nil {
 		return err
 	}
@@ -146,7 +138,7 @@ func (q *sqsTaskQueue) Fail(message *TaskMessage, err error) error {
 	})
 }
 
-func (q *sqsTaskQueue) MessageCount() (int, error) {
+func (q *SqsTaskQueue) MessageCount() (int, error) {
 	return q.sqsQueue.MessageCount()
 }
 

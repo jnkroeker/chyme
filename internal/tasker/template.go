@@ -5,25 +5,20 @@ import (
 )
 
 type Template struct {
-	Name string
-	Create func(resource *core.Resource) *core.Task 
+	Name   string
+	Create func(resource *core.Resource) *core.Task
 }
 
-type Templater interface {
-	Create(resource *core.Resource) []*core.Task 
-	Reload() error 
-}
-
-type inMemTemplater struct {
-	templates []*Template 
+type Templater struct {
+	templates []*Template
 	version   string
 }
 
 func NewInMemTemplater(templates []*Template, version string) Templater {
-	return &inMemTemplater{templates, version}
+	return Templater{templates, version}
 }
 
-func (t *inMemTemplater) Create(resource *core.Resource) []*core.Task {
+func (t Templater) Create(resource *core.Resource) []*core.Task {
 	tasks := make([]*core.Task, 0)
 	for _, template := range t.templates {
 		if task := template.Create(resource); task != nil {
@@ -34,6 +29,6 @@ func (t *inMemTemplater) Create(resource *core.Resource) []*core.Task {
 	return tasks
 }
 
-func (t *inMemTemplater) Reload() error {
+func (t Templater) Reload() error {
 	return nil
 }

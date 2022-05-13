@@ -8,14 +8,14 @@ import (
 
 type Service struct {
 	ResourceSetKey     string
-	ResourceRepository core.ResourceRepository
+	ResourceRepository *core.RedisResourceRepository
 	TaskRepository     core.TaskRepository
-	TaskQueue          core.TaskQueue
+	TaskQueue          *core.SqsTaskQueue
 	Templater          Templater
 	BatchSize          int
 }
 
-func New(rsKey string, rr core.ResourceRepository, tr core.TaskRepository, q core.TaskQueue, t Templater, batchSize int) Service {
+func New(rsKey string, rr *core.RedisResourceRepository, tr core.TaskRepository, q *core.SqsTaskQueue, t Templater, batchSize int) Service {
 	return Service{
 		rsKey,
 		rr,

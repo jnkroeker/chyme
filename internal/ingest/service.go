@@ -11,15 +11,13 @@ import (
 	"kroekerlabs.dev/chyme/services/pkg/aws"
 )
 
-// the redis.Client is now in the resourceRepository
 type IngestService struct {
-	ResourceRepository core.ResourceRepository
-	ResourceSetKey     string
-	// redis			    *redis.Client
-	S3 *s3.S3
+	RedisResourceRepository *core.RedisResourceRepository
+	ResourceSetKey          string
+	S3                      *s3.S3
 }
 
-func New(repository core.ResourceRepository, key string, s3 *s3.S3) IngestService {
+func New(repository *core.RedisResourceRepository, key string, s3 *s3.S3) IngestService {
 
 	svc := IngestService{
 		repository,
@@ -54,7 +52,7 @@ func (i IngestService) Ingest(resource *core.Resource, filterString string, recu
 	if err != nil {
 		return 0, err
 	}
-	res, err := i.ResourceRepository.Add(i.ResourceSetKey, filtered)
+	res, err := i.RedisResourceRepository.Add(i.ResourceSetKey, filtered)
 	if err != nil {
 		return 0, ErrEmpty
 	}
@@ -69,7 +67,7 @@ func (i IngestService) ingestPrefix(resource *core.Resource, filter FilterFunc, 
 
 	bucket := aws.NewS3Bucket(i.S3, resource.Url.Host) // strings.Trim(bucketUrl.Path, "/")
 
-	bi, err := i.ResourceRepository.BulkInsert(i.ResourceSetKey)
+	bi, err := i.RedisResourceRepository.BulkInsert(i.ResourceSetKey)
 	if err != nil {
 		return 0, err
 	}
@@ -102,11 +100,11 @@ func (i IngestService) ingestPrefix(resource *core.Resource, filter FilterFunc, 
 
 	bi.Close()
 
-	bucketObjectCount, err := i.ResourceRepository.Count(i.ResourceSetKey)
+	bucketObjectCount, err := i.RedisResourceRepository.Count(i.ResourceSetKey)
 	if err != nil {
 		return 0, err
 	}
 	return bucketObjectCount, nil
 }
 
-var ErrEmpty = errors.New("Got to SAdd but it errored out ")
+var ErrEmpty = errors.New("got to SAdd but it errored out ")

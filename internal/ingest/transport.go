@@ -23,7 +23,8 @@ type IngestResponse struct {
 	Err string `json:"err,omitempty"`
 }
 
-// The empty interface request parameter and response on the return function value is the signiture of a go-kit endpoint
+// The empty interface request parameter and response
+// on the return function value is the signiture of a go-kit endpoint
 func MakeIngestEndpoint(svc IngestService) endpoint.Endpoint {
 	return func(_ context.Context, request interface{}) (interface{}, error) {
 		req := request.(IngestRequest)

@@ -34,32 +34,21 @@ func (r *Resource) Hash() string {
 	return r.hash
 }
 
-// TODO: there is really no need for this interface
-// although this is a part of the code that could change
-// we don't have another type of resource repository besides this one
-// using an interface is overkill here and makes the code less readable
-type ResourceRepository interface {
-	Pop(setKey string, count int) ([]*Resource, error)
-	Add(setKey string, resources ...*Resource) (int, error)
-	BulkInsert(setKey string) (BulkResourceInserter, error)
-	Count(setKey string) (int, error)
-}
-
 // Concrete redis implementation of ResourceRepository.
-// TODO: remember Bill saying it is never safe to make a copy of an address that a pointer is pointing to?
+// NOTE: remember Bill saying it is never safe to make a copy of an address that a pointer is pointing to?
 // i.e. it is never safe to go from pointer to value semantics
 // is this why the ResourceRepository interface is implemented using pointer semantics?
-type redisResourceRepository struct {
+type RedisResourceRepository struct {
 	client *redis.Client
 }
 
-func NewRedisResourceRepository(client *redis.Client) ResourceRepository {
-	return &redisResourceRepository{client}
+func NewRedisResourceRepository(client *redis.Client) *RedisResourceRepository {
+	return &RedisResourceRepository{client}
 }
 
 // Pops max `count` Resources from the Set at key `setKey`. If the set contains less than `count`, the number of
 // Resources returned will equal the size of the set.
-func (r *redisResourceRepository) Pop(setKey string, count int) ([]*Resource, error) {
+func (r *RedisResourceRepository) Pop(setKey string, count int) ([]*Resource, error) {
 	fmt.Println("setKey")
 	fmt.Println(setKey)
 	fmt.Println("count")
@@ -82,7 +71,7 @@ func (r *redisResourceRepository) Pop(setKey string, count int) ([]*Resource, er
 	return resources, nil
 }
 
-func (r *redisResourceRepository) Add(setKey string, resources ...*Resource) (int, error) {
+func (r *RedisResourceRepository) Add(setKey string, resources ...*Resource) (int, error) {
 	nResources := len(resources)
 	urls := make([]interface{}, nResources)
 	for i, resource := range resources {
@@ -94,7 +83,7 @@ func (r *redisResourceRepository) Add(setKey string, resources ...*Resource) (in
 	return int(count), err
 }
 
-func (r *redisResourceRepository) BulkInsert(setKey string) (BulkResourceInserter, error) {
+func (r *RedisResourceRepository) BulkInsert(setKey string) (BulkResourceInserter, error) {
 	cmd := exec.Command("redis-cli", "--pipe")
 
 	stdIn, err := cmd.StdinPipe()
@@ -110,7 +99,7 @@ func (r *redisResourceRepository) BulkInsert(setKey string) (BulkResourceInserte
 	return &redisBulkInserter{cmd, setKey, stdIn}, nil
 }
 
-func (r *redisResourceRepository) Count(setKey string) (int, error) {
+func (r *RedisResourceRepository) Count(setKey string) (int, error) {
 	count, err := r.client.SCard(setKey).Result()
 	return int(count), err
 }

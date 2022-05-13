@@ -18,10 +18,11 @@ import (
 
 /* Resource Builders */
 
-// TODO: definitely need to return a pointer here, there can not be a copy of an aws session
+// must return a pointer here, there can not be a copy of an aws session
 // aws sdk returns a pointer from session.Must
 func buildAwsSession() *session.Session {
 
+	// build a new Vault client
 	client, err := api.NewClient(&api.Config{
 		Address: chConfig.VaultAddress,
 	})
@@ -31,10 +32,12 @@ func buildAwsSession() *session.Session {
 		return nil
 	}
 
+	// setting the token on the Vault client prepares it to handle requests
+	// client.Logical() returns a logical-backend for API calls
 	client.SetToken(chConfig.VaultStaticToken)
 	c := client.Logical()
 
-	// TODO: empty interface usage?
+	// empty interface required by call to Vault API c.Write
 	options := map[string]interface{}{
 		"ttl": "30m",
 	}
@@ -53,6 +56,7 @@ func buildAwsSession() *session.Session {
 
 	creds := credentials.NewStaticCredentials(key, secret, token)
 
+	// creates and returns a pointer to a new AWS session
 	sess := session.Must(session.NewSession(&amzaws.Config{
 		Credentials: creds,
 		MaxRetries:  amzaws.Int(3),
@@ -64,14 +68,14 @@ func buildAwsSession() *session.Session {
 
 // S3 api factory function New() returns a pointer
 func getS3Service(sess *session.Session) *s3.S3 {
-	endpoint := "" // this should be an environment variable (look into use of github.com/joho/godotenv)
+	endpoint := os.Getenv("AWS_S3_ENDPOINT") // this should be an environment variable (look into use of github.com/joho/godotenv)
 	return s3.New(sess, &amzaws.Config{
 		Endpoint: amzaws.String(endpoint),
 	})
 }
 
 func getSQSService(sess *session.Session) *sqs.SQS {
-	endpoint := "" // this should be an environment variable
+	endpoint := os.Getenv("AWS_SQS_ENDPOINT") // this should be an environment variable
 	return sqs.New(sess, &amzaws.Config{
 		Endpoint: amzaws.String(endpoint),
 	})
@@ -100,7 +104,7 @@ func getRedisClient() *redis.Client {
 	return cli
 }
 
-func getResourceRepository(client *redis.Client) core.ResourceRepository {
+func getResourceRepository(client *redis.Client) *core.RedisResourceRepository {
 	return core.NewRedisResourceRepository(client)
 }
 

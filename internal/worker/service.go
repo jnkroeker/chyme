@@ -13,7 +13,7 @@ import (
 )
 
 type Service struct {
-	TaskQueue    core.TaskQueue
+	TaskQueue    *core.SqsTaskQueue
 	TaskLoader   core.TaskLoader
 	TaskExecutor core.TaskExecutor
 	Hooks        hooks.Registry
@@ -26,7 +26,7 @@ type Service struct {
 }
 
 // Return a pointer becasue we have a mutex involved. It is never safe to copy (value semantics) a mutex
-func New(q core.TaskQueue, tl core.TaskLoader, te core.TaskExecutor, hooks hooks.Registry, p Persister, v string) *Service {
+func New(q *core.SqsTaskQueue, tl core.TaskLoader, te core.TaskExecutor, hooks hooks.Registry, p Persister, v string) *Service {
 	inProcess := make(map[string]*core.Task)
 
 	// TODO: this channel was left out of the original New() method

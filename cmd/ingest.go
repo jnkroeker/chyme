@@ -57,6 +57,11 @@ var ingestStartCmd = &cobra.Command{
 	},
 }
 
+// the ingest command of the ingest service creates an IngestRequest from the
+// URL argument and flags passed to the command then sends the request to the
+// endpoint listener created in the ingestStartCmd above ^
+// ** the next step in the process, minus all the boilerplate, is the
+// svc.Ingest command in the ingest.Handle function in the endpoint in transport.go
 var ingestCmd = &cobra.Command{
 	Use:   "ingest",
 	Short: "ingest an S3 bucket to redis",
@@ -93,10 +98,6 @@ var ingestCmd = &cobra.Command{
 	},
 }
 
-// TODO: IngestService return type is an interface.
-// Why?
-// Is there not only ever one implementation of it?
-
 func buildService(logger log.Logger) ingest.IngestService {
 
 	// these functions are in main package, util.go file
@@ -108,7 +109,7 @@ func buildService(logger log.Logger) ingest.IngestService {
 	// TODO: create logging resource repository
 	// resourceRepository = core.NewLoggingResourceRepository(resourceRepository, logger)
 
-	setKey := chConfig.ResourceSetKey //os.Getenv("RESOURCE_SET_KEY")
+	setKey := chConfig.ResourceSetKey
 
 	svc := ingest.New(resourceRepository, setKey, s3Client)
 

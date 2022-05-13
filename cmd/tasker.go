@@ -65,7 +65,7 @@ var taskerStartCmd = &cobra.Command{
 
 		// read only channel
 		doneCh := make(chan bool)
-		// channel capacity 1
+		// channel buffer size 1
 		sigCh := make(chan os.Signal, 1)
 		// causes package signal to relay incoming signals to channel
 		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
