@@ -3,9 +3,9 @@ Set up a vault development server:
     `vault server -dev`
     x `export VAULT_DEV_ROOT_TOKEN_ID="..." 
     put  `Root Token` in .env as `CH_VAULT_STATIC_TKN`
-    ensure vault binary in /usr/local/bin and attached to the PATH in .bashrc `cat ~/.bashrc`
+    ensure vault binary in /usr/local/bin and attached to the PATH in .bashrc `echo $PATH | grep /usr/local/bin/vault` or `cat ~/.bashrc`
     `export VAULT_ADDR="http://127.0.0.1:8200" so we can run cmd line
-    put the vault address in .env as `CH_VAULT_ADDR`
+    put the vault address `http://localhost:8200` in .env as `CH_VAULT_ADDR`
     `vault status` to ensure vault server running
     `vault secrets enable aws`
 
@@ -20,12 +20,18 @@ Set up a vault development server:
     role_arns=<vault_s3_sqs_engineer ARN> credential_type=assumed_role`
     (arn:aws:iam::966216697299:role/vault_s3_sqs_engineer)
 
-    //dont do this if you want to run chyme right away
+    // dont execute this if you want to run chyme right away
     `vault write aws/sts/assume_role_s3_sqs ttl=15m`
 
 Set up a redis development server:
 
     from /usr/bin run `./redis-server`
+
+    if following error encountered:
+        Could not create server TCP listening socket *:6379: bind: Address already in use
+
+    `sudo service redis-server stop`
+
 
 Set Docker Host environment variable and username in config:
 

@@ -31,6 +31,7 @@ var workerStartCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Start the Worker service.",
 	Run: func(_ *cobra.Command, args []string) {
+		fmt.Println("starting worker")
 
 		sess := buildAwsSession()
 
