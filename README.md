@@ -1,88 +1,126 @@
-Set up a vault development server:
+### Quick Start
 
-    `vault server -dev`
+1. Set up a vault development server:
 
-    put  `Root Token` in .env as `CH_VAULT_STATIC_TKN`
-    ensure vault binary in /usr/local/bin and attached to the PATH in .bashrc `cat ~/.bashrc`
+    a. execute `vault server -dev`
 
-    `export VAULT_ADDR="http://127.0.0.1:8200" so we can run cmd line
+        `brew services restart vault` can clean up and restart vault on Mac
 
-    put the vault address in .env as `CH_VAULT_ADDR`
+    b. put  `Root Token` in .env as `CH_VAULT_STATIC_TKN`
 
-    `vault status` to ensure vault server running
+    c. ensure vault binary in /usr/local/bin and attached to the PATH in .bashrc with:
 
-    `vault secrets enable aws`
+        `echo $PATH | grep /usr/local/bin` or `cat ~/.bashrc` 
 
-    `vault write aws/config/root 
-    access_key="..." secret_key="..." region="us-east-1"` 
-    with jnkroeker IAM user credentials 
+    d. execute `export VAULT_ADDR="http://127.0.0.1:8200" ` so we can run cmd line
 
-    `vault read aws/config/root` 
+    e. put the vault address, http://localhost:8200 , in .env as `CH_VAULT_ADDR`
 
-    `vault secrets list`
+    f. execute `vault status` to ensure vault server running
 
+    g. execute `vault secrets enable aws` 
+        
+        this allows us to store AWS secrets in Valut
+
+    h. execute `vault write aws/config/root access_key="..." secret_key="..." region="us-east-1"` 
+    
+        fill in AWS IAM user credentials
+
+    i. execute `vault read aws/config/root` 
+
+    j. execute `vault secrets list`
+
+    k. provide a role for the Chyme operation to assume that will give access to sqs and s3
+    
     `vault write aws/roles/assume_role_s3_sqs role_arns=<vault_s3_sqs_engineer ARN> credential_type=assumed_role`
+    
+        this is the ARN for the role you created for this purpose: arn:aws:iam::966216697299:role/vault_s3_sqs_engineer
 
-        `arn:aws:iam::966216697299:role/vault_s3_sqs_engineer`
+    // dont execute this if you want to run chyme right away
+    l. assume the role by executing `vault write aws/sts/assume_role_s3_sqs ttl=15m`
 
-    //dont do this if you want to run chyme right away
-    `vault write aws/sts/assume_role_s3_sqs ttl=15m`
+2. Set up a redis development server:
 
-Set up a redis development server:
+    a. If running Chyme from Ubuntu, from /usr/bin execute `./redis-server`
 
-    from /usr/bin run `./redis-server`
+       If running from Mac, redis is installed with homebrew, so execute `redis-server` from anywhere
 
-Set Docker Host environment variable and username in config:
+    b. if following error encountered:
+        Could not create server TCP listening socket *:6379: bind: Address already in use
 
-    export DOCKER_HOST="unix:///var/run/docker.sock"
+        execute `sudo service redis-server stop` if on Ubuntu
 
-    this is the working directory on the local machine.
-    and the user is the user built into the image in the Dockerfile.s
+3. Set Docker Host environment variable and username in config:
 
-    on Ubuntu desktop it is:
+    a. execute `export DOCKER_HOST="unix:///var/run/docker.sock"`
 
-    CH_WORKER_DOCKER_USER='john'
-    CH_WORKER_WORKDIR='/home/john/'
+    b. ensure the following set in .env:
+        
+        this is the working directory on the local machine.
+        and the user is the user built into the image in the Dockerfile
 
-    on Mac laptop it is:
+        on Ubuntu desktop it is:
 
-    CH_WORKER_DOCKER_USER='john'
-    CH_WORKER_WORKDIR='/Users/johnkroeker/'
+        CH_WORKER_DOCKER_USER='john'
+        CH_WORKER_WORKDIR='/home/john/'
 
-Run the CLI:
+        on Mac laptop it is:
+
+        CH_WORKER_DOCKER_USER='john'
+        CH_WORKER_WORKDIR='/Users/johnkroeker/'
+
+4. Build docker image for mov processing
+
+    execute `docker build . jnkroeker/mov_converter:<version>`
+
+5. Run the CLI:
 
     cd ~/go/src/chyme
     `make build`
 
-Currently supported commands (* = required):
+### Currently supported commands (* = required):
 
     * `./out/chyme help`
 
-    --- Open new terminal window for following, remaining commands ---
+    --- Open new terminal window for following commands ---
+
+#### Indexing S3 Bucket
 
     `./out/chyme indexer start`
  
     `./out/chyme indexer ingest s3://{*BUCKET}/{KEY} --filter 'ext/{FILE_TYPE}' --recursion {DEPTH}` 
 
+        Chyme only has a processing template for .MOV files at present.
+
+            --filter 'ext/mov'
+
     open redis server with `redis-cli` command
-    `KEYS *`
-    `SMEMBERS "<key name>"` because the value type at the the key is a SET
+
+        `KEYS *`
+
+        `SMEMBERS "<key name>"` because the value type at the the key is a SET
+
+#### Add tasks for processing the indexed bucket in Redis
 
     --- After ingesting to Redis, start tasker to add tasks to SQS queue ---
 
     `./out/chyme tasker start`
 
+#### Start processing the queued tasks
+
     --- After tasker adds tasks to SQS queue, start worker ---
 
     `./out/chyme worker start`
 
-Kill redis-server :
+#### Clean up
 
-    open redis-cli
+    Kill redis-server :
 
-    `shutdown NOSAVE`
+        open redis-cli
 
-CHANGELOG: 
+        `shutdown NOSAVE`
+
+### CHANGELOG: 
 
     2020-07-26: s3 url scheme now `s3://<bucket-name>/<key-name>`
 
@@ -124,5 +162,10 @@ CHANGELOG:
                     onto container at /in 
     
     2021-05-21: all stages of chyme work; 
-                    pulls a .mov file from S3, processes it using ffmpeg docker container, uploads mpg-dash manifest file to another S3 bucket
+                    pulls a .mov file from S3, processes it using ffmpeg docker container, uploads mpg-dash manifest file to another S3
+
+    2022-12-10: upgraded vault to v1.10.0
+
+                need to add graceful shutdown of worker when interrupt signal received
+
 
