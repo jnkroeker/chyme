@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	// "io"
 	// "os"
 	// "path/filepath"
@@ -65,8 +66,7 @@ func (e *dockerTaskExecutor) Execute(ctx context.Context, task *Task) (*Executio
 		}
 
 		resp, err := e.makeContainer(localCtx, image, task)
-		// fmt.Println("make container response: ")
-		// fmt.Println(resp)
+
 		if err != nil {
 			return nil, err
 		}
@@ -183,7 +183,7 @@ func (e *dockerTaskExecutor) pullImage(ctx context.Context, image string) error 
 
 func (e *dockerTaskExecutor) makeContainer(ctx context.Context, image string, task *Task) (container.ContainerCreateCreatedBody, error) {
 	// define the volume bindings for the container
-	in :=  "/" + task.Workspace.InputDir + ":/in"
+	in := "/" + task.Workspace.InputDir + ":/in"
 	out := "/" + task.Workspace.OutputDir + ":/out"
 
 	env := make([]string, 0)

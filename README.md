@@ -1,12 +1,16 @@
 Set up a vault development server:
 
     `vault server -dev`
-    x `export VAULT_DEV_ROOT_TOKEN_ID="..." 
+
     put  `Root Token` in .env as `CH_VAULT_STATIC_TKN`
     ensure vault binary in /usr/local/bin and attached to the PATH in .bashrc `cat ~/.bashrc`
+
     `export VAULT_ADDR="http://127.0.0.1:8200" so we can run cmd line
+
     put the vault address in .env as `CH_VAULT_ADDR`
+
     `vault status` to ensure vault server running
+
     `vault secrets enable aws`
 
     `vault write aws/config/root 
@@ -14,10 +18,12 @@ Set up a vault development server:
     with jnkroeker IAM user credentials 
 
     `vault read aws/config/root` 
+
     `vault secrets list`
 
-    `vault write aws/roles/assume_role_s3_sqs 
-    role_arns=<vault_s3_sqs_engineer ARN> credential_type=assumed_role`
+    `vault write aws/roles/assume_role_s3_sqs role_arns=<vault_s3_sqs_engineer ARN> credential_type=assumed_role`
+
+        `arn:aws:iam::966216697299:role/vault_s3_sqs_engineer`
 
     //dont do this if you want to run chyme right away
     `vault write aws/sts/assume_role_s3_sqs ttl=15m`
@@ -28,17 +34,22 @@ Set up a redis development server:
 
 Set Docker Host environment variable and username in config:
 
-    x `export DOCKER_HOST="tcp://0.0.0.0:2375"`
     export DOCKER_HOST="unix:///var/run/docker.sock"
+
+    this is the working directory on the local machine.
+    and the user is the user built into the image in the Dockerfile.s
+
+    on Ubuntu desktop it is:
 
     CH_WORKER_DOCKER_USER='john'
     CH_WORKER_WORKDIR='/home/john/'
 
-Run the CLI:
+    on Mac laptop it is:
 
-    x first update vault static token in /cmd/util.go
-    x `go build`
-    x `go install chyme`
+    CH_WORKER_DOCKER_USER='john'
+    CH_WORKER_WORKDIR='/Users/johnkroeker/'
+
+Run the CLI:
 
     cd ~/go/src/chyme
     `make build`

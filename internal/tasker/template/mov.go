@@ -22,10 +22,10 @@ var Mov = &tasker.Template{
 	Name: "Mov",
 	Create: func(resource *core.Resource) *core.Task {
 		if strings.ToLower(path.Ext(resource.Url.Path)) != ".mov" {
-			return nil 
+			return nil
 		}
 
-		outUrl := *resource.Url 
+		outUrl := *resource.Url
 		outUrl.Path = path.Join(os.Getenv("CH_TEMPLATE_MOV_MIRROR_PREFIX"), outUrl.Host, outUrl.Path) + "/"
 		outUrl.Host = os.Getenv("CH_TEMPLATE_MOV_MIRROR_BUCKET")
 
@@ -37,7 +37,7 @@ var Mov = &tasker.Template{
 			ExecutionStrategy: &core.ExecutionStrategy{
 				Executor: "docker",
 				Config: map[string]string{
-					"image": "jnkroeker/mov_converter:0.6",
+					"image": "jnkroeker/mov_converter:0.7",
 				},
 			},
 			Timeout: mie4nitfTimeout,
