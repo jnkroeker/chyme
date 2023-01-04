@@ -37,7 +37,7 @@ var Mov = &tasker.Template{
 			ExecutionStrategy: &core.ExecutionStrategy{
 				Executor: "docker",
 				Config: map[string]string{
-					"image": "jnkroeker/mov_converter:0.7",
+					"image": "jnkroeker/mov_converter:0.1.0",
 				},
 			},
 			Timeout: mie4nitfTimeout,

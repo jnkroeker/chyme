@@ -12,7 +12,7 @@
 
         `echo $PATH | grep /usr/local/bin` or `cat ~/.bashrc` 
 
-    d. execute `export VAULT_ADDR="http://127.0.0.1:8200" ` so we can run cmd line
+    d. execute `export VAULT_ADDR="http://127.0.0.1:8200"` so we can run cmd line
 
     e. put the vault address, http://localhost:8200 , in .env as `CH_VAULT_ADDR`
 
@@ -52,7 +52,7 @@
 
 3. Set Docker Host environment variable and username in config:
 
-    a. execute `export DOCKER_HOST="unix:///var/run/docker.sock"`
+    a. execute ` `
 
     b. ensure the following set in .env:
         
@@ -93,6 +93,8 @@
         Chyme only has a processing template for .MOV files at present.
 
             --filter 'ext/mov'
+        
+        Use test bucket s3://june-test-bucket-jnk/video/
 
     open redis server with `redis-cli` command
 
@@ -167,5 +169,3 @@
     2022-12-10: upgraded vault to v1.10.0
 
                 need to add graceful shutdown of worker when interrupt signal received
-
-
