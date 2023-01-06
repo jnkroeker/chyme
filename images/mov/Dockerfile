@@ -39,8 +39,12 @@ RUN rm -rf /var/cache/apk/* /tmp/*
 RUN adduser -S -u 1000 john
 USER john
 
-# Copy mov processing script to container
-COPY process_mov.sh /home/john/process_mov.sh
+# Copy mov processing script to image
+### when using `make mov_converter` command to build this image, path to .sh file needs to be relative to Makefile
+COPY images/mov/process_mov.sh /home/john/process_mov.sh
+
+# Copy gopro metadata extractor binary to image
+COPY images/mov/gopro /home/john/gopro
 
 # Run mov processing on container start
 ENTRYPOINT ["/home/john/process_mov.sh"]

@@ -183,6 +183,8 @@ func (e *dockerTaskExecutor) pullImage(ctx context.Context, image string) error 
 
 func (e *dockerTaskExecutor) makeContainer(ctx context.Context, image string, task *Task) (container.ContainerCreateCreatedBody, error) {
 	// define the volume bindings for the container
+	// files added to the local input directory (~/chyme/<task num>/input) will be placed on the container at /in
+	// files added to /out on the container after processing will end up in ~/chyme/<task num>/output
 	in := "/" + task.Workspace.InputDir + ":/in"
 	out := "/" + task.Workspace.OutputDir + ":/out"
 

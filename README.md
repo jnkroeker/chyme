@@ -6,7 +6,9 @@
 
         `brew services restart vault` can clean up and restart vault on Mac
 
-    b. put  `Root Token` in .env as `CH_VAULT_STATIC_TKN`
+        `top` to see running processes on Mac: `kill -9 <#>` to stop process
+
+    b. put `Root Token` in .env as `CH_VAULT_STATIC_TKN`
 
     c. ensure vault binary in /usr/local/bin and attached to the PATH in .bashrc with:
 
@@ -20,7 +22,7 @@
 
     g. execute `vault secrets enable aws` 
         
-        this allows us to store AWS secrets in Valut
+        this allows us to store AWS secrets in Vault
 
     h. execute `vault write aws/config/root access_key="..." secret_key="..." region="us-east-1"` 
     
@@ -52,7 +54,7 @@
 
 3. Set Docker Host environment variable and username in config:
 
-    a. execute ` `
+    a. execute `export DOCKER_HOST="unix:///var/run/docker.sock"`
 
     b. ensure the following set in .env:
         
@@ -71,7 +73,13 @@
 
 4. Build docker image for mov processing
 
-    execute `docker build . jnkroeker/mov_converter:<version>`
+    a. update CONVERTER_VERSION variable in Makefile
+
+    b. update the image version number in /internal/tasker/template/mov.go to match CONVERTER_VERSION
+
+    b. execute `make mov_converter`
+
+    x execute `docker build . jnkroeker/mov_converter:<version>
 
 5. Run the CLI:
 
@@ -82,7 +90,7 @@
 
     * `./out/chyme help`
 
-    --- Open new terminal window for following commands ---
+*** Open new terminal window for following commands ***
 
 #### Indexing S3 Bucket
 
@@ -93,8 +101,8 @@
         Chyme only has a processing template for .MOV files at present.
 
             --filter 'ext/mov'
-        
-        Use test bucket s3://june-test-bucket-jnk/video/
+
+        use test bucket s3://june-test-bucket-jnk/video/
 
     open redis server with `redis-cli` command
 
@@ -169,3 +177,10 @@
     2022-12-10: upgraded vault to v1.10.0
 
                 need to add graceful shutdown of worker when interrupt signal received
+
+    2023-01-04: added a go binary for metadata extraction (from my exorcist project) to the mov_converter Docker image
+
+                added lines to images/mov/process_mov.sh to execute the extractor binary
+
+    2023-01-05: force dec-2022 branch as new master; master would not execute tasks using worker
+
