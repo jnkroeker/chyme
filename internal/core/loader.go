@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"syscall"
 
-	"kroekerlabs.dev/chyme/services/pkg/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"kroekerlabs.dev/chyme/services/pkg/aws"
 )
 
 type ResourceLoader interface {
@@ -23,7 +23,7 @@ type ResourceLoader interface {
 	Tag(resource *Resource, tags map[string]string) error
 }
 
-type LoaderRegistry map[string]ResourceLoader 
+type LoaderRegistry map[string]ResourceLoader
 
 type resourceLoader struct {
 	registry LoaderRegistry
@@ -50,7 +50,7 @@ func (l *resourceLoader) Download(ctx context.Context, resource *Resource, path 
 func (l *resourceLoader) Upload(ctx context.Context, resource *Resource, path string, metadata map[string]*string, remove bool) (int64, error) {
 	loader, err := l.resolve(resource)
 	if err != nil {
-		return 0, err 
+		return 0, err
 	}
 	return loader.Upload(ctx, resource, path, metadata, remove)
 }
@@ -66,7 +66,7 @@ func (l *resourceLoader) CheckCapacityPosix(resource *Resource, path string, sca
 func (l *resourceLoader) Exists(ctx context.Context, resource *Resource) (bool, error) {
 	loader, err := l.resolve(resource)
 	if err != nil {
-		return false, err 
+		return false, err
 	}
 	return loader.Exists(ctx, resource)
 }
@@ -81,7 +81,7 @@ func (l *resourceLoader) Tag(resource *Resource, tags map[string]string) error {
 
 func (l *resourceLoader) resolve(resource *Resource) (ResourceLoader, error) {
 	if resource.Phony {
-		return l.registry["phony"], nil 
+		return l.registry["phony"], nil
 	}
 	loader, ok := l.registry[resource.Url.Scheme]
 	if !ok {
@@ -209,6 +209,7 @@ func (l *s3ResourceLoader) Upload(ctx context.Context, resource *Resource, fileP
 
 	// If the resource is a prefix and the upload location is a directory, sync the directory into the prefix.
 	if isPfx && isDir {
+		fmt.Println("resource is a prefix and upload location a directory")
 		trimmed := trimTrailingSlash(resource.Url.Path)
 		if remove {
 			if err := bucket.DeletePrefix(&aws.ListObjectsOptions{RootPrefix: trimmed}); err != nil {
@@ -231,6 +232,7 @@ func (l *s3ResourceLoader) Upload(ctx context.Context, resource *Resource, fileP
 
 	// If the resource is an object and the upload location is a file, use the object name.
 	if !(isPfx || isDir) {
+		fmt.Println("resource is an object and upload location a file")
 		if remove {
 			if err := bucket.DeleteIfExists(resource.Url.Path); err != nil {
 				return 0, err
@@ -249,6 +251,7 @@ func (l *s3ResourceLoader) Upload(ctx context.Context, resource *Resource, fileP
 	// If the resource is a prefix and the upload location is a file, upload a new object with the filename into the
 	// prefix.
 	if isPfx && !isDir {
+		fmt.Println("resource is a prefix and upload location a file")
 		_, filename := filepath.Split(filePath)
 		key := path.Join(resource.Url.Path, filename)
 
@@ -270,6 +273,7 @@ func (l *s3ResourceLoader) Upload(ctx context.Context, resource *Resource, fileP
 	// If the resource is an object and the upload location is a directory, archive the upload directory into the
 	// object.
 	if !isPfx && isDir {
+		fmt.Println("resource is an object and upload location a directory")
 		ext := filepath.Ext(object)
 		if ext != ".tar" {
 			return 0, fmt.Errorf("unsupported archive format %s", ext)

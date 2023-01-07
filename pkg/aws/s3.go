@@ -3,22 +3,22 @@ package aws
 import (
 	"context"
 	"errors"
-	"path/filepath"
 	"fmt"
 	"io"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"sync"
 	"sync/atomic"
 
-	"kroekerlabs.dev/chyme/services/pkg/util"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"golang.org/x/sync/errgroup"
+	"kroekerlabs.dev/chyme/services/pkg/util"
 )
 
 const maxDeleteObjectsKeys = 1000
@@ -41,14 +41,14 @@ type Bucket interface {
 type s3Bucket struct {
 	name            string
 	svc             *s3.S3
-	downloader      *s3manager.Downloader 
+	downloader      *s3manager.Downloader
 	uploader        *s3manager.Uploader
 	defaultMetadata map[string]*string
 }
 
 func NewS3Bucket(svc *s3.S3, name string) Bucket {
 	downloader := s3manager.NewDownloaderWithClient(svc)
-	uploader   := s3manager.NewUploaderWithClient(svc)
+	uploader := s3manager.NewUploaderWithClient(svc)
 
 	return &s3Bucket{name, svc, downloader, uploader, nil}
 }
@@ -56,8 +56,8 @@ func NewS3Bucket(svc *s3.S3, name string) Bucket {
 /** list objects of s3 bucket specifics **/
 
 type ListObjectsOptions struct {
-	RootPrefix  string
-	Depth int
+	RootPrefix string
+	Depth      int
 }
 
 func (b *s3Bucket) ListObjects(options *ListObjectsOptions, visit func(object *s3.Object) error) error {
@@ -70,7 +70,7 @@ func (b *s3Bucket) ListObjects(options *ListObjectsOptions, visit func(object *s
 	//user specified recusion depth is the maximum depth; we start from 1 when calling lister.list
 	lister := lister{b.svc, visit, depth}
 	return lister.list(&s3.ListObjectsV2Input{
-		Bucket:    aws.String(b.name),
+		Bucket: aws.String(b.name),
 		// Prefix as below is exactly the same as above Bucket param
 		// figure out how to parse the bit after the bucket in the URL
 		// better yet, how to specify the URL's scheme
@@ -89,12 +89,14 @@ func (b *s3Bucket) Download(ctx context.Context, key string, w io.WriterAt) (int
 }
 
 func (b *s3Bucket) Upload(ctx context.Context, key string, r io.Reader, metadata map[string]*string) (int64, error) {
+	fmt.Println("In s3 bucket Upload")
+	fmt.Println(key)
 	cr := &util.CountingReader{Reader: r}
 	// mergeMetadata(metadata, b.defaultMetadata)
 	_, err := b.uploader.UploadWithContext(ctx, &s3manager.UploadInput{
-		Key: aws.String(key),
-		Bucket: aws.String(b.name),
-		Body: cr,
+		Key:      aws.String(key),
+		Bucket:   aws.String(b.name),
+		Body:     cr,
 		Metadata: metadata,
 	})
 	return int64(cr.BytesRead), err
@@ -102,12 +104,15 @@ func (b *s3Bucket) Upload(ctx context.Context, key string, r io.Reader, metadata
 
 // Uploads a directory by appending the paths of its subtree (relative to the base directory)
 func (b *s3Bucket) UploadDirectory(ctx context.Context, dir string, basePrefix string) (int64, error) {
+	fmt.Println("In s3 directory Upload")
+	fmt.Println(dir)
+	fmt.Println(basePrefix)
 	iter, readers, err := b.directoryToUploadIterator(dir, basePrefix)
 	if err != nil {
-		return 0, err 
+		return 0, err
 	}
 	if err := b.uploader.UploadWithIterator(ctx, iter); err != nil {
-		return 0, err 
+		return 0, err
 	}
 	return readers.Sum(), nil
 }
@@ -167,10 +172,10 @@ func (b *s3Bucket) DownloadPrefix(ctx context.Context, key string, dir string, d
 		mtx.Lock()
 		objects = append(objects, object)
 		mtx.Unlock()
-		return nil 
+		return nil
 	})
 	if err != nil {
-		return 0, err 
+		return 0, err
 	}
 
 	bdObjects := make([]s3manager.BatchDownloadObject, len(objects))
@@ -304,8 +309,8 @@ func (b *s3Bucket) sizePrefix(key string) (int64, error) {
 }
 
 type lister struct {
-	svc *s3.S3
-	visit func(*s3.Object) error
+	svc      *s3.S3
+	visit    func(*s3.Object) error
 	maxDepth int
 }
 

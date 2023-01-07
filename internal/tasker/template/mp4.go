@@ -37,7 +37,7 @@ var Mp4 = &tasker.Template{
 			ExecutionStrategy: &core.ExecutionStrategy{
 				Executor: "docker",
 				Config: map[string]string{
-					"image": "jnkroeker/mp4_processor:0.1.0",
+					"image": "jnkroeker/mp4_processor:0.1.4",
 				},
 			},
 			Timeout: mie4nitfTimeout,
