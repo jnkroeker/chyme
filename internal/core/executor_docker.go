@@ -80,16 +80,22 @@ func (e *dockerTaskExecutor) Execute(ctx context.Context, task *Task) (*Executio
 	statusCh, errCh := e.client.ContainerWait(localCtx, containerID, container.WaitConditionNotRunning)
 	select {
 	case <-timeoutChan:
+		fmt.Println("hit timeout in executor_docker")
 		if killErr := e.killContainer(ctx, containerID, "SIGKILL"); killErr != nil {
 			err = fmt.Errorf("exceeded timeout (%s) and failed to kill container: %s", task.Timeout.String(), killErr.Error())
 		} else {
 			err = fmt.Errorf("exceeded timeout (%s), container killed", task.Timeout.String())
 		}
 	case <-ctx.Done():
+		fmt.Println("hit ctx.Done in executor_docker")
 		err = ctx.Err()
 	case e := <-errCh:
+		fmt.Println("hit errCh in executor_docker")
+		fmt.Println(e.Error())
 		err = e
 	case status := <-statusCh:
+		fmt.Println("hit statusCh in executor_docker")
+		fmt.Println(status.StatusCode)
 		if status.StatusCode != 0 {
 			execErr = fmt.Errorf("container returned non-zero status %d", status.StatusCode)
 		}
@@ -129,6 +135,10 @@ func (e *dockerTaskExecutor) makeResult(task *Task, execErr error) (*ExecutionRe
 	if id == "" {
 		return nil, errors.New("container not found for task")
 	}
+
+	fmt.Println("results:")
+	fmt.Println(execErr)
+	fmt.Println(task.Workspace.OutputDir)
 
 	result := &ExecutionResult{
 		Err:           execErr,

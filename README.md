@@ -73,11 +73,14 @@
 
 4. Build docker image for mov processing
 
-    a. update CONVERTER_VERSION variable in Makefile
+    a. update MOV_CONVERTER_VERSION and/or MP4_PROCESSOR_VERSION variable in Makefile
 
     b. update the image version number in /internal/tasker/template/mov.go to match CONVERTER_VERSION
 
-    b. execute `make mov_converter`
+    c. if building MP4 converter, 
+        ensure the binary built from github.com/jnkroeker/exorcist is in /images/mp4 folder
+
+    d. execute `make mov_converter` and/or `make mp4_converter`
 
     x execute `docker build . jnkroeker/mov_converter:<version>
 
@@ -98,9 +101,11 @@
  
     `./out/chyme indexer ingest s3://{*BUCKET}/{KEY} --filter 'ext/{FILE_TYPE}' --recursion {DEPTH}` 
 
-        Chyme only has a processing template for .MOV files at present.
+        Chyme only has a processing template for .MOV and .MP4 files at present.
 
             --filter 'ext/mov'
+            OR
+            --filter 'ext/mp4'
 
         use test bucket s3://june-test-bucket-jnk/video/
 
@@ -108,7 +113,7 @@
 
         `KEYS *`
 
-        `SMEMBERS "<key name>"` because the value type at the the key is a SET
+        `SMEMBERS "<key name>"` because the value type at the key is a SET
 
 #### Add tasks for processing the indexed bucket in Redis
 
@@ -184,3 +189,6 @@
 
     2023-01-05: force dec-2022 branch as new master; master would not execute tasks using worker
 
+    2023-01-06: metadata extractor binary does not work on .MOV files because there is no metadata stream on this file type
+
+                beginning development of an mp4_extractor image a template for processing

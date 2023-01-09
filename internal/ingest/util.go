@@ -1,10 +1,10 @@
 package ingest
 
 import (
-	"regexp"
-	"strings"
 	"errors"
 	"fmt"
+	"regexp"
+	"strings"
 
 	"kroekerlabs.dev/chyme/services/internal/core"
 )
@@ -24,19 +24,19 @@ var FilterRegistry = map[string]ResourceFilter{
 }
 
 func NewExtFilter(args []string) (FilterFunc, error) {
-	// regex here looks for '.' specificly and supplants %s with args[0], our extension
-	// will accept anything before the '.'
+	// regex here looks for '.' specificly and supplants %s with args[0]
+	// our extension will accept anything before the '.'
 	re, err := regexp.Compile(fmt.Sprintf(`^(.+)\.%s$`, args[0]))
 	if err != nil {
 		return nil, fmt.Errorf("extension regexp failed to compile: %s", err.Error())
 	}
-	fmt.Sprintf("regex: %s", re)
+
 	return func(resource *core.Resource) *core.Resource {
 		// b, err := resource.MarshalBinary()
 		// if err != nil {
 		// 	return "error converting url to binary", err
 		// }
-		if re.Match([]byte(resource.Url.String())) {
+		if re.Match([]byte(strings.ToLower(resource.Url.String()))) {
 			return resource
 		}
 		return nil
@@ -53,7 +53,7 @@ func NewFilter(filterString string) (FilterFunc, error) {
 	split := strings.Split(filterString, "/")
 	// use the first part of 'ext/pdf' find the right filter function in the map
 	// the FilterRegistry maps a filter type (like extension) to functions to be performed
-	filter, ok := FilterRegistry[split[0]] 
+	filter, ok := FilterRegistry[split[0]]
 	if !ok {
 		return nil, fmt.Errorf("invalid filter %s", split[0])
 	}

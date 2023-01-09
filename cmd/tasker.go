@@ -8,10 +8,10 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/spf13/cobra"
 	"kroekerlabs.dev/chyme/services/internal/core"
 	"kroekerlabs.dev/chyme/services/internal/tasker"
 	"kroekerlabs.dev/chyme/services/internal/tasker/template"
-	"github.com/spf13/cobra"
 )
 
 func init() {
@@ -26,7 +26,7 @@ var taskerCommand = &cobra.Command{
 }
 
 var taskerStartCmd = &cobra.Command{
-	Use: "start",
+	Use:   "start",
 	Short: "Start the Tasker service.",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("starting tasker")
@@ -37,7 +37,7 @@ var taskerStartCmd = &cobra.Command{
 
 		sess := buildAwsSession()
 
-		sqs  := getSQSService(sess)
+		sqs := getSQSService(sess)
 		sqsQueue := getSQSQueue(sqs, chConfig.TaskQueueName)
 		dlq := getSQSQueue(sqs, chConfig.TaskDeadLetterQueueName)
 		taskQueue := core.NewSQSTaskQueue(sqsQueue, dlq)
@@ -56,7 +56,6 @@ var taskerStartCmd = &cobra.Command{
 			TaskRepository:     taskRepository,
 			TaskQueue:          taskQueue,
 			Templater:          templater,
-
 			BatchSize:          batchSize,
 		})
 
@@ -65,15 +64,15 @@ var taskerStartCmd = &cobra.Command{
 		 */
 
 		// read only channel
-		doneCh := make(chan bool) 
+		doneCh := make(chan bool)
 		// channel capacity 1
-		sigCh := make(chan os.Signal, 1) 
+		sigCh := make(chan os.Signal, 1)
 		// causes package signal to relay incoming signals to channel
 		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 
 		/*
 		 * GOROUTINE
-		 */ 
+		 */
 		go doneOnSignal(doneCh, sigCh)
 
 		/*
@@ -105,6 +104,7 @@ func buildTemplater() tasker.Templater {
 	return tasker.NewInMemTemplater([]*tasker.Template{
 		// template.Mie4NitfV2,
 		template.Mov,
+		template.Mp4,
 		// template.MEI4NITFChunked,
 		// template.MP2TS,
 		// template.MEI4NITFBreadcrumb,

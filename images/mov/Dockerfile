@@ -43,8 +43,5 @@ USER john
 ### when using `make mov_converter` command to build this image, path to .sh file needs to be relative to Makefile
 COPY images/mov/process_mov.sh /home/john/process_mov.sh
 
-# Copy gopro metadata extractor binary to image
-COPY images/mov/gopro /home/john/gopro
-
 # Run mov processing on container start
 ENTRYPOINT ["/home/john/process_mov.sh"]

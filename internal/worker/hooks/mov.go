@@ -13,24 +13,22 @@ type MOV struct {
 	ResourceLoader core.ResourceLoader
 }
 
-
 func (m *MOV) PreDownload(ctx context.Context, task *core.Task) error {
-	fmt.Println("predownload hook")
+	fmt.Println("MOV predownload hook")
 	return nil
 }
 
-
 func (m *MOV) PreExecute(ctx context.Context, task *core.Task) error {
-	fmt.Println("preexecute hook")
+	fmt.Println("MOV preexecute hook")
 	return nil
 }
 
 func (m *MOV) PreUpload(ctx context.Context, task *core.Task) error {
-	fmt.Println("preupload hook")
+	fmt.Println("MOV preupload hook")
 	return nil
 }
 
 func (m *MOV) PostUpload(ctx context.Context, task *core.Task) error {
-	fmt.Println("postupload hook")
+	fmt.Println("MOV postupload hook")
 	return nil
 }
