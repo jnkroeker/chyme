@@ -9,7 +9,7 @@ build:
 # Building Images
 
 MOV_CONVERTER_VERSION := 0.1.4
-MP4_PROCESSOR_VERSION := 0.1.4
+MP4_PROCESSOR_VERSION := 0.1.5
 
 mov_converter:
 
